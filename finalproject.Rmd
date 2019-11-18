@@ -24,7 +24,33 @@ set.seed(7)
 ## Tidy Data
 # Week 1 - Week 3 Change
 ```{r}
+but_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, study_week, butyrate_mean, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3") %>% #keep only weeks of interest
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week3 - week1) 
+
+pro_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, study_week, butyrate_mean, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3") %>% #keep only weeks of interest
+  spread(study_week, propionate_mean) %>% 
+  na.omit(week1, week3) %>% #drop NAs from select columns
+  mutate(delta_propionate = week3 - week1) 
+
+comparison_wide<-full_join(pro_wide, but_wide)
+
+linear_correlation_plot<-comparison_wide %>%
+  ggplot(aes(x = delta_propionate,
+             y = delta_butyrate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Propionate (mmol/kg)") + 
+  ylab("Delta Butyrate (mmol/kg)") 
 
 ```
 
 #Analysis
+#
