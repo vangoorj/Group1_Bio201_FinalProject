@@ -28,14 +28,14 @@ set.seed(7)
 but_wide <- all_data_wkly %>%
   rename_all(tolower) %>% 
   select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
-  filter(study_week == "week1" | study_week == "week3" | quantity_compliant == "yes" | frequency == "1xdaily") %>% #keep only weeks of interest, quantity compliant, and 1x
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily") %>% #keep only weeks of interest, quantity compliant, and 1x
   spread(study_week, butyrate_mean) %>% 
   mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
 
 pro_wide <- all_data_wkly %>%
   rename_all(tolower) %>% 
   select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
-  filter(study_week == "week1" | study_week == "week3" | quantity_compliant == "yes" | frequency == "1xdaily") %>% #keep only weeks of interest, quantity compliant, and 1x
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily") %>% #keep only weeks of interest, quantity compliant, and 1x
   spread(study_week, propionate_mean) %>% 
   mutate(delta_propionate = week3 - week1) #calculate difference in propionate
 
@@ -95,8 +95,42 @@ testingtesting123
 ####Test
 
 ##BRMPS+HiMaize
+```{r}
+
+but_wide_HMB <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
+
+pro_wide_HMB <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily", supplement_consumed == "HiMaize+BRMPS") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, propionate_mean) %>% 
+  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
+
+delta_but_pro_wide_HMB <- inner_join(x = but_wide, y = pro_wide,
+                    by = c("participant_id", 
+                           "semester", "supplement_consumed")) %>%
+  select(-starts_with("week"))
+
+```
 ###Tidy Data
 ###Analysis
 ####Assumptions
 ####Plot
+```{r}
+linear_correlation_HMB_plot<-delta_but_pro_wide_HMB %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(linear_correlation_HMB_plot)
+
+```
 ####Test
