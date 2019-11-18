@@ -1,0 +1,30 @@
+---
+title: "finalproject"
+output: html_document
+names: "Julia Van Goor, Joshua Strauss, Alex Yang"
+---
+## Set Working Directory
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/Owner/Documents/Group1_Bio201_FinalProject/")
+```
+
+
+## Load Packages
+```{r Load packages, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(cowplot)
+library(phyloseq)
+library(vegan)
+set.seed(7)
+```
+
+## Tidy Data
+# Week 1 - Week 3 Change
+```{r}
+
+```
+
+#Analysis
