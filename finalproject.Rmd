@@ -89,10 +89,25 @@ testingtesting123
 
 ##LOODAT
 ###Tidy Data
+```{r}
+oiaefjgoierajgoi
+```
 ###Analysis
+```{r}
+
+```
 ####Assumptions
+```{r}
+
+```
 ####Plot
+```{r}
+
+```
 ####Test
+```{r}
+
+```
 
 ##BRMPS+HiMaize
 ```{r}
