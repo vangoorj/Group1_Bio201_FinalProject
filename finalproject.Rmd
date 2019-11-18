@@ -26,18 +26,17 @@ set.seed(7)
 ```{r}
 but_wide <- all_data_wkly %>%
   rename_all(tolower) %>% 
-  select(participant_id, semester, supplement_consumed, study_week, butyrate_mean, propionate_mean) %>% #keep only columns of interest
+  select(participant_id, semester, supplement_consumed, study_week, butyrate_mean) %>% #keep only columns of interest
   filter(study_week == "week1" | study_week == "week3") %>% #keep only weeks of interest
   spread(study_week, butyrate_mean) %>% 
-  mutate(delta_butyrate = week3 - week1) 
+  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
 
 pro_wide <- all_data_wkly %>%
   rename_all(tolower) %>% 
-  select(participant_id, semester, supplement_consumed, study_week, butyrate_mean, propionate_mean) %>% #keep only columns of interest
+  select(participant_id, semester, supplement_consumed, study_week, propionate_mean) %>% #keep only columns of interest
   filter(study_week == "week1" | study_week == "week3") %>% #keep only weeks of interest
   spread(study_week, propionate_mean) %>% 
-  na.omit(week1, week3) %>% #drop NAs from select columns
-  mutate(delta_propionate = week3 - week1) 
+  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
 
 comparison_wide<-full_join(pro_wide, but_wide)
 
