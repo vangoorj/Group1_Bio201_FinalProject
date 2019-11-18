@@ -21,20 +21,21 @@ library(vegan)
 set.seed(7)
 ```
 
-## Tidy Data
-# Week 1 - Week 3 Change All
+#Broad
+### Tidy Data
+#### Week 1 - Week 3 Change All
 ```{r}
 but_wide <- all_data_wkly %>%
   rename_all(tolower) %>% 
-  select(participant_id, semester, supplement_consumed, study_week, butyrate_mean) %>% #keep only columns of interest
-  filter(study_week == "week1" | study_week == "week3") %>% #keep only weeks of interest
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3" | quantity_compliant == "yes" | frequency == "1xdaily") %>% #keep only weeks of interest, quantity compliant, and 1x
   spread(study_week, butyrate_mean) %>% 
   mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
 
 pro_wide <- all_data_wkly %>%
   rename_all(tolower) %>% 
-  select(participant_id, semester, supplement_consumed, study_week, propionate_mean) %>% #keep only columns of interest
-  filter(study_week == "week1" | study_week == "week3") %>% #keep only weeks of interest
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3" | quantity_compliant == "yes" | frequency == "1xdaily") %>% #keep only weeks of interest, quantity compliant, and 1x
   spread(study_week, propionate_mean) %>% 
   mutate(delta_propionate = week3 - week1) #calculate difference in propionate
 
@@ -44,18 +45,39 @@ delta_but_pro_wide <- inner_join(x = but_wide, y = pro_wide,
   select(-starts_with("week"))
 
 ```
-
-#Analysis
-#Broad Linear Correlation
+###Analysis
+####Plot
 ```{r}
 linear_correlation_plot<-delta_but_pro_wide %>%
-  ggplot(aes(x = delta_propionate,
-             y = delta_butyrate)) + 
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("Delta Propionate (mmol/kg)") + 
-  ylab("Delta Butyrate (mmol/kg)") 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
 print(linear_correlation_plot)
 ```
+####Test
 
+#By Supplement
+##BRMPS
+###Tidy Data
+###Analysis
+####Assumptions
+####Plot
+####Test
+
+##LOODAT
+###Tidy Data
+###Analysis
+####Assumptions
+####Plot
+####Test
+
+##BRMPS+HiMaize
+###Tidy Data
+###Analysis
+####Assumptions
+####Plot
+####Test
