@@ -62,11 +62,30 @@ print(linear_correlation_plot)
 
 #By Supplement
 ##BRMPS
+```{r}
+testingtesting123
+```
 ###Tidy Data
+```{r}
+
+```
 ###Analysis
+```{r}
+
+```
 ####Assumptions
+```{r}
+
+```
 ####Plot
+```{r}
+
+```
 ####Test
+```{r}
+
+```
+
 
 ##LOODAT
 ###Tidy Data
