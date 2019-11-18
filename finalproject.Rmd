@@ -70,10 +70,25 @@ print(linear_correlation_plot)
 
 ##LOODAT
 ###Tidy Data
+```{r}
+oiaefjgoierajgoi
+```
 ###Analysis
+```{r}
+
+```
 ####Assumptions
+```{r}
+
+```
 ####Plot
+```{r}
+
+```
 ####Test
+```{r}
+
+```
 
 ##BRMPS+HiMaize
 ###Tidy Data
