@@ -115,7 +115,7 @@ oiaefjgoierajgoi
 but_wide_HMB <- all_data_wkly %>%
   rename_all(tolower) %>% 
   select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
-  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily") %>% #keep only weeks of interest, quantity compliant, and 1x
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily", supplement_consumed == "HiMaize+BRMPS") %>% #keep only weeks of interest, quantity compliant, and 1x
   spread(study_week, butyrate_mean) %>% 
   mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
 
@@ -126,9 +126,9 @@ pro_wide_HMB <- all_data_wkly %>%
   spread(study_week, propionate_mean) %>% 
   mutate(delta_propionate = week3 - week1) #calculate difference in propionate
 
-delta_but_pro_wide_HMB <- inner_join(x = but_wide, y = pro_wide,
+delta_but_pro_wide_HMB <- inner_join(x = but_wide_HMB, y = pro_wide_HMB,
                     by = c("participant_id", 
-                           "semester", "supplement_consumed")) %>%
+                           "semester", "supplement_consumed","frequency", "quantity_compliant")) %>%
   select(-starts_with("week"))
 
 ```
@@ -149,3 +149,4 @@ print(linear_correlation_HMB_plot)
 
 ```
 ####Test
+
