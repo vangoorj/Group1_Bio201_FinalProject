@@ -77,6 +77,7 @@ ggplot(delta_but_pro_wide, aes(x=delta_propionate)) +
 all_data_lm <- delta_but_pro_wide %>%
   lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
 summary(all_data_lm)
+#The p-value is low at 2.8e-8 indicating significance, but the R2 value is .08 which is low meaning that the correlation is very affected by variation, so we cannot accept the correlation.
 ```
 
 #By Supplement
@@ -185,5 +186,5 @@ HMB_lm <- delta_but_pro_wide_HMB %>%
   lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
 summary(HMB_lm) #view results 
 
-# Small .022 p-value indicates significance, and the other H2
+# Small .022 p-value indicates significance, and the other R2 is small-ish at .2 representing that the correlation could be just from variation effects. It is not that small, so it's a sort of in a grey area.
 ```
