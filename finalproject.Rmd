@@ -58,7 +58,26 @@ linear_correlation_plot<-delta_but_pro_wide %>%
   ylab("Delta Propionate (mmol/kg)") 
 print(linear_correlation_plot)
 ```
+####Assumptions
+```{r}
+nrow(delta_but_pro_wide) # sample size
+
+shapiro.test(delta_but_pro_wide$delta_butyrate) #call column of df with values = vector 
+shapiro.test(delta_but_pro_wide$delta_propionate) #call column of df with values = vector 
+
+ggplot(delta_but_pro_wide, aes(x=delta_butyrate)) +
+  geom_histogram() #histograms show the number of data points (count) at each value
+ggplot(delta_but_pro_wide, aes(x=delta_propionate)) +
+  geom_histogram() #histograms show the number of data points (count) at each value
+
+
+```
 ####Test
+```{r}
+all_data_lm <- delta_but_pro_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(all_data_lm)
+```
 
 #By Supplement
 ##BRMPS
@@ -135,6 +154,18 @@ delta_but_pro_wide_HMB <- inner_join(x = but_wide_HMB, y = pro_wide_HMB,
 ###Tidy Data
 ###Analysis
 ####Assumptions
+```{r}
+nrow(delta_but_pro_wide_HMB) # number of data points
+
+shapiro.test(delta_but_pro_wide_HMB$delta_butyrate) #call column of df with values = vector 
+shapiro.test(delta_but_pro_wide_HMB$delta_propionate) #call column of df with values = vector 
+
+ggplot(delta_but_pro_wide_HMB, aes(x=delta_butyrate)) +
+  geom_histogram() #histograms show the number of data points (count) at each value
+ggplot(delta_but_pro_wide_HMB, aes(x=delta_propionate)) +
+  geom_histogram() #histograms show the number of data points (count) at each value
+
+```
 ####Plot
 ```{r}
 linear_correlation_HMB_plot<-delta_but_pro_wide_HMB %>%
@@ -149,4 +180,10 @@ print(linear_correlation_HMB_plot)
 
 ```
 ####Test
+```{r}
+HMB_lm <- delta_but_pro_wide_HMB %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(HMB_lm) #view results 
 
+# Small .022 p-value indicates significance, and the other H2
+```
