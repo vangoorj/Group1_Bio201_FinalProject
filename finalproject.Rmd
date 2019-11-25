@@ -30,19 +30,28 @@ but_wide <- all_data_wkly %>%
   select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
   filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
   spread(study_week, butyrate_mean) %>% 
-  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
+  mutate(delta_butyrate = week1 - week3) #calculate difference in butyrate 
 
 pro_wide <- all_data_wkly %>%
   rename_all(tolower) %>% 
   select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
   filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
   spread(study_week, propionate_mean) %>% 
-  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
+  mutate(delta_propionate = week1 - week3) #calculate difference in propionate
 
 delta_but_pro_wide <- inner_join(x = but_wide, y = pro_wide,
                     by = c("participant_id", 
                            "semester", "supplement_consumed", "frequency")) %>%
   select(-starts_with("week"), -starts_with("quantity_compliant"))
+
+
+incbut_broad_delta_wide <- delta_but_pro_wide %>% 
+  filter(delta_butyrate > 0) #subset for only increased burtyrate
+
+decpro_broad_delta_wide <- delta_but_pro_wide %>% 
+  filter(delta_propionate < 0) #subset for only increased burtyrate
+
+
 
 ```
 ###Analysis
@@ -57,6 +66,28 @@ linear_correlation_plot<-delta_but_pro_wide %>%
   xlab("Delta Butyrate (mmol/kg)") + 
   ylab("Delta Propionate (mmol/kg)") 
 print(linear_correlation_plot)
+
+
+incbut_broad_plot<-incbut_broad_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(incbut_broad_plot)
+
+decpro_broad_plot<-decpro_broad_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(decpro_broad_plot)
+
 ```
 ####Assumptions
 ```{r}
@@ -80,53 +111,310 @@ summary(all_data_lm)
 #The p-value is low at 2.8e-8 indicating significance, but the R2 value is .08 which is low meaning that the correlation is very affected by variation, so we cannot accept the correlation.
 ```
 
+```{r}
+incbut_broad_test <- incbut_broad_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(incbut_broad_test) #view results 
+#p-value = 0.01729
+#Adjusted R-squared = 0.02205
+
+decpro_broad_test <- decpro_broad_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(decpro_broad_test) #view results 
+#p-value = 0.05918
+#Adjusted R-squared = 0.01359
+
+```
+
 #By Supplement
 ##BRMPS
-```{r}
-testingtesting123
-```
 ###Tidy Data
 ```{r}
+BRMPS_delta_wide <- delta_but_pro_wide %>% 
+  filter(supplement_consumed == "BRMPS", frequency == "1xdaily") #subset for BRMPS 1x
 
+inc_BRMPS_delta_wide <- delta_but_pro_wide %>% 
+  filter(supplement_consumed == "BRMPS", frequency == "1xdaily", delta_butyrate > 0) #subset for only increased burtyrate BRMPS 1x
+
+dec_BRMPS_delta_wide <- delta_but_pro_wide %>% 
+  filter(supplement_consumed == "BRMPS", frequency == "1xdaily", delta_propionate < 0) #subset for only decreased propionate BRMPS 1x
 ```
 ###Analysis
-```{r}
-
-```
 ####Assumptions
 ```{r}
+# check sample size
+BRMPS_delta_wide %>%
+  summarise(sample_size = n()) #use summarise() and n() to get counts of ppl
+#n=66
 
+inc_BRMPS_delta_wide %>%
+  summarise(sample_size = n()) #use summarise() and n() to get counts of ppl
+#n=39
+
+dec_BRMPS_delta_wide %>%
+  summarise(sample_size = n()) #use summarise() and n() to get counts of ppl
+#n=38
+
+# normality
+shapiro.test(BRMPS_delta_wide$delta_butyrate) #p-value = 0.5985
+shapiro.test(BRMPS_delta_wide$delta_propionate) #p-value = 0.8763
+
+shapiro.test(inc_BRMPS_delta_wide$delta_butyrate) #p-value = 0.00022222
+shapiro.test(inc_BRMPS_delta_wide$delta_propionate) #p-value = 0.8143
+
+shapiro.test(dec_BRMPS_delta_wide$delta_butyrate) #p-value = 0.7484
+shapiro.test(dec_BRMPS_delta_wide$delta_propionate) #p-value = 0.002383
+
+# histogram
+ggplot(BRMPS_delta_wide, aes(x=delta_butyrate)) +
+  geom_histogram() #histogram for delta butyrate = very normal
+
+ggplot(BRMPS_delta_wide, aes(x=delta_propionate)) +
+  geom_histogram() #histogram for delta propionate = roughly normal
+
+ggplot(inc_BRMPS_delta_wide, aes(x=delta_butyrate)) +
+  geom_histogram() #histogram for delta butyrate = very skewed right
+
+ggplot(inc_BRMPS_delta_wide, aes(x=delta_propionate)) +
+  geom_histogram() #histogram for delta propionate = roughly normal
+
+ggplot(dec_BRMPS_delta_wide, aes(x=delta_butyrate)) +
+  geom_histogram() #histogram for delta butyrate = roughly normal
+
+ggplot(dec_BRMPS_delta_wide, aes(x=delta_propionate)) +
+  geom_histogram() #histogram for delta propionate = skewed left
+
+# variances
+var.test(x = BRMPS_delta_wide$delta_butyrate, 
+         y = BRMPS_delta_wide$delta_propionate, 
+         alternative = "two.sided") # p-value = 0.1289
+
+var.test(x = inc_BRMPS_delta_wide$delta_butyrate, 
+         y = inc_BRMPS_delta_wide$delta_propionate, 
+         alternative = "two.sided") # p-value = 0.1072
+
+var.test(x = dec_BRMPS_delta_wide$delta_butyrate, 
+         y = dec_BRMPS_delta_wide$delta_propionate, 
+         alternative = "two.sided") # p-value = 2.42e-05 UNEQUAL VARIANCES
 ```
 ####Plot
 ```{r}
+BRMPS_plot<-BRMPS_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(BRMPS_plot)
 
+inc_BRMPS_plot<-inc_BRMPS_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(inc_BRMPS_plot)
+
+dec_BRMPS_plot<-dec_BRMPS_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(dec_BRMPS_plot)
 ```
 ####Test
 ```{r}
+BRMPS_test <- BRMPS_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(BRMPS_test) #view results 
+#p-value = 0.01359
+#Adjusted R-squared = 0.07967
 
+inc_BRMPS_test <- inc_BRMPS_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(inc_BRMPS_test) #view results 
+#p-value = 0.9439
+#Adjusted R-squared = -0.02689
+
+dec_BRMPS_test <- dec_BRMPS_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(dec_BRMPS_test) #view results 
+#p-value = 0.1572
+#Adjusted R-squared = 0.02853
 ```
 
 
 ##LOODAT
 ###Tidy Data
 ```{r}
-oiaefjgoierajgoi
+but_wide_LOODAT <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily", supplement_consumed == "LOODAT") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
+but_wide_LOODAT
+
+pro_wide_LOODAT <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily", supplement_consumed == "LOODAT") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, propionate_mean) %>% 
+  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
+pro_wide_LOODAT
+
+delta_but_pro_wide_LOODAT <- inner_join(x = but_wide_LOODAT, y = pro_wide_LOODAT,
+                    by = c("participant_id", 
+                           "semester", "supplement_consumed")) %>%
+  select(-starts_with("week"))
+delta_but_pro_wide_LOODAT
 ```
 ###Analysis
-```{r}
-
-```
 ####Assumptions
 ```{r}
+#Sample Size
+delta_but_pro_wide_LOODAT %>%
+  summarise(sample_size = n()) #n=16
 
+#Normality
+#Butyrate:
+shapiro.test(delta_but_pro_wide_LOODAT$delta_butyrate)
+hist(delta_but_pro_wide_LOODAT$delta_butyrate)
+qqnorm(delta_but_pro_wide_LOODAT$delta_butyrate)
+qqline(delta_but_pro_wide_LOODAT$delta_butyrate) #p=0.8874. Normality supported.
+#Propionate:
+shapiro.test(delta_but_pro_wide_LOODAT$delta_propionate)
+hist(delta_but_pro_wide_LOODAT$delta_propionate)
+qqnorm(delta_but_pro_wide_LOODAT$delta_propionate)
+qqline(delta_but_pro_wide_LOODAT$delta_propionate) #p=0.8912. Normality supported
+
+#Equality of Variances 
+var.test(delta_but_pro_wide_LOODAT$delta_butyrate, delta_but_pro_wide_LOODAT$delta_propionate, alternative = c("two.sided"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT$delta_butyrate, delta_but_pro_wide_LOODAT$delta_propionate, alternative = c("greater"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT$delta_butyrate, delta_but_pro_wide_LOODAT$delta_propionate, alternative = c("less"), conf.level = 0.90) #Variances not equal. Variance ratio b/t two groups less than 1. Equal variances not supported. Variance ratio 0.490782.
+
+#------------------------------------------------------------------------------------
+#Assumptions selecting for butyrate increase: 
+delta_but_pro_wide_LOODAT_dbup <- delta_but_pro_wide_LOODAT %>%
+  filter(delta_butyrate > 0) %>%
+  summarise(sample_size = n()) #n=10
+delta_but_pro_wide_LOODAT_dbup
+
+delta_but_pro_wide_LOODAT_dbup <- delta_but_pro_wide_LOODAT %>%
+  filter(delta_butyrate > 0)
+
+#Normality
+#Butyrate:
+shapiro.test(delta_but_pro_wide_LOODAT_dbup$delta_butyrate)
+hist(delta_but_pro_wide_LOODAT_dbup$delta_butyrate)
+qqnorm(delta_but_pro_wide_LOODAT_dbup$delta_butyrate)
+qqline(delta_but_pro_wide_LOODAT_dbup$delta_butyrate) #p=0.4914. Normality supported.
+
+#Propionate:
+shapiro.test(delta_but_pro_wide_LOODAT_dbup$delta_propionate)
+hist(delta_but_pro_wide_LOODAT_dbup$delta_propionate)
+qqnorm(delta_but_pro_wide_LOODAT_dbup$delta_propionate)
+qqline(delta_but_pro_wide_LOODAT_dbup$delta_propionate) #p=0.729. Normality supported
+
+#Equality of Variances 
+var.test(delta_but_pro_wide_LOODAT_dbup$delta_butyrate, delta_but_pro_wide_LOODAT_dbup$delta_propionate, alternative = c("two.sided"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT_dbup$delta_butyrate, delta_but_pro_wide_LOODAT_dbup$delta_propionate, alternative = c("greater"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT_dbup$delta_butyrate, delta_but_pro_wide_LOODAT_dbup$delta_propionate, alternative = c("less"), conf.level = 0.90) #Variances not equal. Variance ratio b/t two groups less than 1. Equal variances not supported. Variance ratio 0.1342535
+
+#------------------------------------------------------------------------------------
+#Assumptions selecting for propionate Conditions: 
+delta_but_pro_wide_LOODAT_pdown <- delta_but_pro_wide_LOODAT %>%
+  filter(delta_propionate < 0) %>%
+  summarise(sample_size = n()) #n=9
+delta_but_pro_wide_LOODAT_pdown
+
+delta_but_pro_wide_LOODAT_pdown <- delta_but_pro_wide_LOODAT %>%
+  filter(delta_propionate < 0)
+
+#Normality
+#Butyrate:
+shapiro.test(delta_but_pro_wide_LOODAT_pdown$delta_butyrate)
+hist(delta_but_pro_wide_LOODAT_pdown$delta_butyrate)
+qqnorm(delta_but_pro_wide_LOODAT_pdown$delta_butyrate)
+qqline(delta_but_pro_wide_LOODAT_pdown$delta_butyrate) #p=0.8178. Normality supported.
+
+#Propionate:
+shapiro.test(delta_but_pro_wide_LOODAT_pdown$delta_propionate)
+hist(delta_but_pro_wide_LOODAT_pdown$delta_propionate)
+qqnorm(delta_but_pro_wide_LOODAT_pdown$delta_propionate)
+qqline(delta_but_pro_wide_LOODAT_pdown$delta_propionate) #p=0.2762. Normality supported
+
+#Equality of Variances 
+var.test(delta_but_pro_wide_LOODAT_pdown$delta_butyrate, delta_but_pro_wide_LOODAT_pdown$delta_propionate, alternative = c("two.sided"), conf.level = 0.90) #p-value = 0.6178. 
+
+var.test(delta_but_pro_wide_LOODAT_pdown$delta_butyrate, delta_but_pro_wide_LOODAT_pdown$delta_propionate, alternative = c("greater"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT_pdown$delta_butyrate, delta_but_pro_wide_LOODAT_pdown$delta_propionate, alternative = c("less"), conf.level = 0.90) #Variances equal. Variance ratio b/t two groups around 1. Equal variances supported. Variance ratio 1.440443. 
 ```
 ####Plot
 ```{r}
+LOODAT_correlation_plot <- delta_but_pro_wide_LOODAT %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(LOODAT_correlation_plot)
 
+#------------------------------------------------------------------------------------
+#Plot Assuming butyrate Conditions Met:
+LOODAT_correlation_plot_dbup <- delta_but_pro_wide_LOODAT_dbup %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(LOODAT_correlation_plot_dbup)
+
+#------------------------------------------------------------------------------------
+#Plot Assuming propionate Conditions Met:
+LOODAT_correlation_plot_pdown <- delta_but_pro_wide_LOODAT_pdown %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(LOODAT_correlation_plot_pdown)
 ```
 ####Test
 ```{r}
+LOODAT_test <- delta_but_pro_wide_LOODAT %>%
+  lm(delta_propionate ~ delta_butyrate, data = .)
+summary(LOODAT_test) #view results 
 
+#------------------------------------------------------------------------------------
+#Test Assuming Butyrate Condition Met:
+LOODAT_test_dbup <- delta_but_pro_wide_LOODAT_dbup %>%
+  lm(delta_propionate ~ delta_butyrate, data = .)
+summary(LOODAT_test_dbup) #view results 
+
+#------------------------------------------------------------------------------------
+#Test Assuming Propionate Condition Met:
+LOODAT_test_pdown <- delta_but_pro_wide_LOODAT_pdown %>%
+  lm(delta_propionate ~ delta_butyrate, data = .)
+summary(LOODAT_test_pdown) #view results 
 ```
 
 ##BRMPS+HiMaize
