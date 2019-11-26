@@ -1,0 +1,111 @@
+---
+title: "finalproject"
+output: html_document
+names: "Julia Van Goor, Joshua Strauss, Alex Yang"
+---
+## Set Working Directory
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/Owner/Documents/Group1_Bio201_FinalProject/")
+```
+
+
+## Load Packages
+```{r Load packages, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(cowplot)
+library(phyloseq)
+library(vegan)
+set.seed(7)
+```
+
+#Broad
+### Tidy Data
+#### Create Deltas But Also Maintain Individual Measurements
+```{r}
+but_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
+
+pro_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, propionate_mean) %>% 
+  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
+
+but_pro_wide <- inner_join(x = but_wide, y = pro_wide,
+                    by = c("participant_id", 
+                           "semester", "supplement_consumed", "frequency")) %>%
+  rename(but_wk1 = week1.x, but_wk3 = week3.x, pro_wk1 = week1.y, pro_wk3 = week3.y) %>% 
+  select(-starts_with("quantity_compliant"))
+
+c_all_data_wkly <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") #keep only weeks of interest and quantity compliant
+```
+
+#All Measurements - plot and test
+```{r}
+allmeans_plot<-c_all_data_wkly %>%
+  ggplot(aes(x = butyrate_mean,
+             y = propionate_mean)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Mean Butyrate Concentration (mmol/kg)") + 
+  ylab("Mean Propionate Concentration (mmol/kg)") 
+print(allmeans_plot)
+
+allmeans_lm <- c_all_data_wkly %>%
+  lm(butyrate_mean ~ propionate_mean, data = .) #test relationship
+summary(allmeans_lm)
+#p-value = 2.2e-16
+#adjusted R2 = 0.099
+```
+
+
+#Week1 Means - plot and test
+```{r}
+wk1means_plot<-but_pro_wide %>%
+  ggplot(aes(x = but_wk1,
+             y = pro_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Mean Butyrate Concentration (mmol/kg)") + 
+  ylab("Mean Propionate Concentration (mmol/kg)") 
+print(wk1means_plot)
+
+wk1means_lm <- but_pro_wide %>%
+  lm(but_wk1 ~ pro_wk1, data = .) #test relationship
+summary(wk1means_lm)
+#p-value = 3.76e-14
+#adjusted R2 = 0.1365
+```
+
+
+#Week3 Means - plot and test
+```{r}
+wk3means_plot<-but_pro_wide %>%
+  ggplot(aes(x = but_wk3,
+             y = pro_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Mean Butyrate Concentration (mmol/kg)") + 
+  ylab("Mean Propionate Concentration (mmol/kg)") 
+print(wk3means_plot)
+
+wk3means_lm <- but_pro_wide %>%
+  lm(but_wk3 ~ pro_wk3, data = .) #test relationship
+summary(wk3means_lm)
+#p-value = 5.523e-08
+#adjusted R2 = 0.07315
+```
