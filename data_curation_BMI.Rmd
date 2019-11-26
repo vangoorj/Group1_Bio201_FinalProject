@@ -21,6 +21,26 @@ library(vegan)
 set.seed(7)
 ```
 
+#Import Data
+```{r}
+library(readr)
+biographical <- read_delim("~/Group1_Bio201_FinalProject/raw_data/biographical.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+View(biographical)
+
+library(readr)
+phylum_processed_df_both_weeks_present_final <- read_delim("~/Group1_Bio201_FinalProject/Phylum Data Frames/phylum_processed_df_both_weeks_present_final.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+View(phylum_processed_df_both_weeks_present_final)
+
+library(readr)
+all_data_wkly <- read_delim("~/Group1_Bio201_FinalProject/raw_data/Bigzipfile/all_data_wkly.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+View(all_data_wkly)
+
+```
+
+
 #Tidy Data
 ## BMI df
 ```{r}
@@ -91,5 +111,23 @@ overweight_but_pro <-  inner_join(x= overweight_BMI, y = but_pro_wide,
 obese_but_pro <-  inner_join(x= obese_BMI, y = but_pro_wide,
                                   by = c("participant_id")) #n = 10
 #total n = 178
+```
+
+#Join BMI and Phylum df
+```{r}
+BMI_phylum_scfa <- inner_join(x = BMI_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 139
+
+underweight_phylum_scfa  <- inner_join(x = underweight_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 9
+
+healthy_phylum_scfa <- inner_join(x = healthy_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 105
+
+overweight_phylum_scfa <- inner_join(x = overweight_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 20
+
+obese_phulum_scfa <- inner_join(x = obese_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 5
 ```
 
