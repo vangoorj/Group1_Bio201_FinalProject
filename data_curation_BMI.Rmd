@@ -1,0 +1,95 @@
+---
+title: "BMI_data"
+output: html_document
+names: "Julia Van Goor, Joshua Strauss, Alex Yang"
+---
+## Set Working Directory
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/Owner/Documents/Group1_Bio201_FinalProject/")
+```
+
+
+## Load Packages
+```{r Load packages, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(cowplot)
+library(phyloseq)
+library(vegan)
+set.seed(7)
+```
+
+#Tidy Data
+## BMI df
+```{r}
+BMI_data <- biographical %>% 
+  rename_all(tolower) %>%
+  select(participant_id, sex, age, race_ethnicity, weight_kg, height_meters) %>%
+  drop_na(weight_kg, height_meters) %>%
+  mutate(BMI = weight_kg/(height_meters)^2) #calculate all BMIs; n = 252
+
+underweight_BMI <- BMI_data %>% 
+  filter(BMI < 18.5) #subset by CDC category: underweight - n = 12
+
+healthy_BMI <- BMI_data %>% 
+  filter(BMI >= 18.5, BMI < 25) #subset by CDC category: healthy - n = 186
+
+overweight_BMI <- BMI_data %>% 
+  filter(BMI >= 25, BMI < 30) #subset by CDC category: overweight - n = 39
+
+obese_BMI <- BMI_data %>% 
+  filter(BMI >= 30) #subset by CDC category: obese - n = 15
+
+#total n = 252
+```
+
+## Butyrate and Propionate df
+```{r}
+c_all_data_wkly <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") #curated all data weekly: keep only weeks and supplements of interest
+
+#wide dfs
+but_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
+
+pro_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, propionate_mean) %>% 
+  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
+
+but_pro_wide <- inner_join(x = but_wide, y = pro_wide,
+                    by = c("participant_id", 
+                           "semester", "supplement_consumed", "frequency")) %>%
+  rename(but_wk1 = week1.x, but_wk3 = week3.x, pro_wk1 = week1.y, pro_wk3 = week3.y) %>% 
+  select(-starts_with("quantity_compliant")) #all measurements by participant ID
+```
+
+##Joined df
+```{r}
+BMI_but_pro <- inner_join(x = BMI_data, y = but_pro_wide,
+                          by = c("participant_id")) #n = 178
+
+underweight_but_pro <- inner_join(x= underweight_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 10
+
+healthy_but_pro <- inner_join(x= healthy_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 133
+
+overweight_but_pro <-  inner_join(x= overweight_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 25
+
+obese_but_pro <-  inner_join(x= obese_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 10
+#total n = 178
+```
+
