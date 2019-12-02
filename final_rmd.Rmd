@@ -1,0 +1,324 @@
+---
+title: "final_rmd"
+output: html_document
+names: "Julia Van Goor, Joshua Strauss, Alex Yang"
+---
+# Set Working Directory
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/Owner/Documents/Group1_Bio201_FinalProject/")
+```
+
+
+# Load Packages
+```{r Load packages, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(cowplot)
+library(phyloseq)
+library(vegan)
+set.seed(7)
+```
+
+#Import Data
+```{r}
+library(readr)
+biographical <- read_delim("~/Group1_Bio201_FinalProject/raw_data/biographical.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+View(biographical)
+
+library(readr)
+phylum_processed_df_both_weeks_present_final <- read_delim("~/Group1_Bio201_FinalProject/Phylum Data Frames/phylum_processed_df_both_weeks_present_final.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+View(phylum_processed_df_both_weeks_present_final)
+
+library(readr)
+all_data_wkly <- read_delim("~/Group1_Bio201_FinalProject/raw_data/Bigzipfile/all_data_wkly.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+View(all_data_wkly)
+
+```
+
+#Tidy Data
+##Butyrate and Propionate df
+```{r}
+c_all_data_wkly <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") #curated all data weekly: keep only weeks and supplements of interest
+
+#wide dfs
+but_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
+
+pro_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, propionate_mean) %>% 
+  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
+
+but_pro_wide <- inner_join(x = but_wide, y = pro_wide,
+                    by = c("participant_id", 
+                           "semester", "supplement_consumed", "frequency")) %>%
+  rename(but_wk1 = week1.x, but_wk3 = week3.x, pro_wk1 = week1.y, pro_wk3 = week3.y) %>% 
+  select(-starts_with("quantity_compliant")) #all measurements by participant ID
+```
+##BMI df
+```{r}
+BMI_data <- biographical %>% 
+  rename_all(tolower) %>%
+  select(participant_id, sex, age, race_ethnicity, weight_kg, height_meters) %>%
+  drop_na(weight_kg, height_meters) %>%
+  mutate(BMI = weight_kg/(height_meters)^2) #calculate all BMIs; n = 252
+
+underweight_BMI <- BMI_data %>% 
+  filter(BMI < 18.5) #subset by CDC category: underweight - n = 12
+
+healthy_BMI <- BMI_data %>% 
+  filter(BMI >= 18.5, BMI < 25) #subset by CDC category: healthy - n = 186
+
+overweight_BMI <- BMI_data %>% 
+  filter(BMI >= 25, BMI < 30) #subset by CDC category: overweight - n = 39
+
+obese_BMI <- BMI_data %>% 
+  filter(BMI >= 30) #subset by CDC category: obese - n = 15
+
+#total n = 252
+```
+
+##Phylum df
+```{r}
+#Creating Processed Phylum Data Frame:
+phylum_processed_df <- phylum_avg_shared %>%
+  rename_all(tolower) %>%
+  filter(study_week == "week1" | study_week == "week3") %>%
+  select("participant_id", "semester", "study_week", "firmicutes", "bacteroidetes <bacteroidetes>") %>%
+  rename(., "bacteroidetes" = "bacteroidetes <bacteroidetes>") %>%
+  mutate(., f_b_ratio = firmicutes/bacteroidetes)
+
+#Checking Sample Sizes for Consistency by Week:
+phylum_processed_df %>%
+  filter(study_week == "week1") %>%
+  summarise(sample_size = n()) # n = 508
+
+phylum_processed_df %>%
+  filter(study_week == "week3") %>%
+  summarise(sample_size = n()) # n = 480. 508-480 = 28 inconsistencies. 
+
+#Split by Weeks and Recombine so only samples with both weeks present: 
+phylum_week1 <- phylum_processed_df %>%
+  filter(study_week == "week1")
+
+phylum_week3 <- phylum_processed_df %>%
+  filter(study_week == "week3")
+phylum_week3
+
+phylum_processed_df_both_weeks_present <- inner_join(phylum_week1, phylum_week3, by = (c("participant_id")))
+
+#Final Data Frames:
+phylum_processed_df
+phylum_processed_df_both_weeks_present
+
+phylum_processed_df_both_weeks_present_final <- phylum_processed_df_both_weeks_present %>%
+  rename(firmicutes_wk1 = firmicutes.x, bacteroidetes_wk1 = bacteroidetes.x, fb_ratio_wk1 =  
+  f_b_ratio.x, firmicutes_wk3 = firmicutes.y, bacteroidetes_wk3 = bacteroidetes.y, fb_ratio_wk3 = 
+  f_b_ratio.y, semester = semester.x) %>%
+  select(-starts_with("study_week"), -starts_with("semester.y"))
+View(phylum_processed_df_both_weeks_present_final)
+
+#Save Plots: 
+write_delim(phylum_processed_df, path = "~/Desktop/phylum_processed_df.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(phylum_processed_df_both_weeks_present, path = "~/Desktop/phylum_processed_df_both_weeks_present.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(phylum_processed_df_both_weeks_present_final, path = "~/Desktop/phylum_processed_df_both_weeks_present_final.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+```
+
+##Joined BMI and scfas
+```{r}
+BMI_but_pro <- inner_join(x = BMI_data, y = but_pro_wide,
+                          by = c("participant_id")) #n = 178
+
+underweight_but_pro <- inner_join(x= underweight_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 10
+
+healthy_but_pro <- inner_join(x= healthy_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 133
+
+overweight_but_pro <-  inner_join(x= overweight_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 25
+
+obese_but_pro <-  inner_join(x= obese_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 10
+#total n = 178
+```
+
+##Joined BMI, scfas, and phylums
+```{r}
+BMI_phylum_scfa <- inner_join(x = BMI_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 139
+
+underweight_phylum_scfa  <- inner_join(x = underweight_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 9
+
+healthy_phylum_scfa <- inner_join(x = healthy_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 105
+
+overweight_phylum_scfa <- inner_join(x = overweight_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 20
+
+obese_phulum_scfa <- inner_join(x = obese_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 5
+```
+
+#Analysis
+##Broad (All BMIs)
+```{r}
+
+```
+
+##Underweight
+```{r}
+
+```
+
+##Healthy Weight
+###Wk1 F:B and BMI
+```{r}
+#PLOT
+hwk1fb_BMI_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = BMI)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Ratio of Firmicutes to Bacteroidetes by healthy BMI",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "BMI")
+print(hwk1fb_BMI_plot)
+
+#TEST
+hwk1fb_BMI_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ BMI, data = .) #test relationship
+summary(hwk1fb_BMI_test) #view results 
+#p-value = 0.3083
+#Adjusted R-squared = 0.000465
+
+#Save Plot
+save_plot(filename = "figures/hwk1fb_BMI_plot.pdf",
+          plot = hwk1fb_BMI_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "healthy" participants was 0.3083, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (0.000465). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "Healthy" category.
+
+###Wk1 F:B and Wk1 Butyrate
+```{r}
+#PLOT
+hwk1fb_wk1but_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = but_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 1 Ratio of Firmicutes to Bacteroidetes by Butyrate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Butyrate Concentration (mmol/kg)")
+print(hwk1fb_wk1but_plot)
+
+#TEST
+hwk1fb_wk1but_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ but_wk1, data = .) #test relationship
+summary(hwk1fb_wk1but_test) #view results 
+#p-value = 0.005637
+#Adjusted R-squared = 0.06302
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among "healthy" participants was 0.005637, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.06302). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among participants whose BMI falls within the CDC's "Healthy" category.
+
+###Wk1 F:B and Wk1 Propionate
+```{r}
+#PLOT
+hwk1fb_wk1pro_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = pro_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 1 Ratio of Firmicutes to Bacteroidetes by Propionate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Propionate Concentration (mmol/kg)")
+print(hwk1fb_wk1pro_plot)
+
+#TEST
+hwk1fb_wk1pro_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ pro_wk1, data = .) #test relationship
+summary(hwk1fb_wk1pro_test) #view results 
+#p-value = 0.004754
+#Adjusted R-squared = 0.06841
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among "healthy" participants was 0.004754, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.06841). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among participants whose BMI falls within the CDC's "Healthy" category.
+
+###Wk3 F:B and Wk3 Butyrate
+```{r}
+#PLOT
+hwk3fb_wk3but_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = but_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 3 Ratio of Firmicutes to Bacteroidetes by Butyrate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Butyrate Concentration (mmol/kg)")
+print(hwk3fb_wk3but_plot)
+
+#TEST
+hwk3fb_wk3but_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ but_wk3, data = .) #test relationship
+summary(hwk3fb_wk3but_test) #view results 
+#p-value = 0.7948
+#Adjusted R-squared = -0.009043
+```
+The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among "healthy" participants was 0.7948, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (-0.009043). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among participants whose BMI falls within the CDC's "Healthy" category.
+
+###Wk3 F:B and Wk3 Propionate
+```{r}
+#PLOT
+hwk3fb_wk3pro_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = pro_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 3 Ratio of Firmicutes to Bacteroidetes by Propionate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Propionate Concentration (mmol/kg)")
+print(hwk3fb_wk3pro_plot)
+
+#TEST
+hwk3fb_wk3pro_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ pro_wk3, data = .) #test relationship
+summary(hwk3fb_wk3pro_test) #view results 
+#p-value = 0.01675
+#Adjusted R-squared = 0.04645
+```
+The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among "healthy" participants was 0.01675, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.04645). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among participants whose BMI falls within the CDC's "Healthy" category.
+
+##Overweight
+```{r}
+
+```
+
+##Obese
+```{r}
+
+```
+
+#Final Conclusions
