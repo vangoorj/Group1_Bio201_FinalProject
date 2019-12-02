@@ -235,7 +235,7 @@ lm_Broad_BMI_plot_wk1<-BMI_phylum_scfa %>%
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
   xlab("BMI") + 
-  ylab("FB_Ratio") 
+  ylab("FB_Ratio") + labs(title = "Broad BMI and F:B Ratio Correlation wk1")
 print(lm_Broad_BMI_plot_wk1)
 
 lm_Broad_BMI_wk1<-BMI_phylum_scfa %>%
@@ -249,7 +249,7 @@ lm_Broad_BMI_plot_wk3<-BMI_phylum_scfa %>%
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
   xlab("BMI") + 
-  ylab("FB_Ratio") 
+  ylab("FB_Ratio")  + labs(title = "Broad BMI and F:B Ratio Correlation wk3")
 print(lm_Broad_BMI_plot_wk3)
 
 lm_Broad_wk3_BMI<-BMI_phylum_scfa %>%
@@ -280,8 +280,8 @@ lm_wk1_but_Broad_plot<-BMI_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("fb_ratio_wk1") + 
-  ylab("Butyrate Concentration wk1") 
+  xlab("F:B ratio wk1") + 
+  ylab("Butyrate Concentration kg/mmol wk1")  + labs(title = "Broad F:B Ratio and Butyrate Concentration Correlation wk1")
 print(lm_wk1_but_Broad_plot)
 
 lm_wk1_but_Broad<-BMI_phylum_scfa %>%
@@ -294,8 +294,8 @@ lm_wk3_but_Broad_plot<-BMI_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("fb_ratio_wk3") + 
-  ylab("Butyrate Concentration wk3") 
+  xlab("F:B ratio wk3") + 
+  ylab("Butyrate Concentration kg/mmol wk3")  + labs(title = "Broad F:B Ratio and Butyrate Concentration Correlation wk3")
 print(lm_wk3_but_Broad_plot)
 
 lm_wk3_but_Broad<-BMI_phylum_scfa %>%
@@ -327,8 +327,8 @@ lm_wk1_pro_Broad_plot<-BMI_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("fb_ratio_wk1") + 
-  ylab("Propionate Concentration wk1") 
+  xlab("F:B ratio wk1") + 
+  ylab("Propionate Concentration kg/mmol wk1")  + labs(title = "Broad F:B Ratio and Propionate Concentration Correlation wk1")
 print(lm_wk1_pro_Broad_plot)
 
 lm_wk1_pro_Broad<-BMI_phylum_scfa %>%
@@ -341,8 +341,8 @@ lm_wk3_pro_Broad_plot<-BMI_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("fb_ratio_wk3") + 
-  ylab("Propiionate Concentration wk3") 
+  xlab("F:B ratio wk3") + 
+  ylab("Propionate Concentration kg/mmol wk3")  + labs(title = "Broad F:B Ratio and Propionate Concentration Correlation wk3")
 print(lm_wk3_pro_Broad_plot)
 
 lm_wk3_pro_Broad<-BMI_phylum_scfa %>%
@@ -373,8 +373,8 @@ lm_wk1_but_under_plot<-underweight_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("fb_ratio_wk1") + 
-  ylab("Butyrate Concentration wk1") 
+  xlab("F:B ratio wk1") + 
+  ylab("Butyrate Concentration kg/mmol wk1")  + labs(title = "Underweight F:B Ratio and Butyrate Concentration Correlation wk1")
 print(lm_wk1_but_under_plot)
 
 lm_wk1_but_under<-BMI_phylum_scfa %>%
@@ -387,8 +387,8 @@ lm_wk3_but_under_plot<-underweight_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("fb_ratio_wk3") + 
-  ylab("Butyrate Concentration wk3") 
+  xlab("F:B ratio wk3") + 
+  ylab("Butyrate Concentration kg/mmol wk3")  + labs(title = "Underweight F:B Ratio and Butyrate Concentration Correlation wk3") 
 print(lm_wk3_but_under_plot)
 
 lm_wk3_but_under<-BMI_phylum_scfa %>%
@@ -418,8 +418,8 @@ lm_wk1_pro_under_plot<-underweight_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("fb_ratio_wk1") + 
-  ylab("Propionate Concentration wk1") 
+   xlab("F:B ratio wk1") + 
+  ylab("Propionate Concentration kg/mmol wk1")  + labs(title = "Underweight F:B Ratio and Propionate Concentration Correlation wk1")
 print(lm_wk1_pro_under_plot)
 
 lm_wk1_pro_under<-BMI_phylum_scfa %>%
@@ -432,8 +432,8 @@ lm_wk3_pro_under_plot<-underweight_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("fb_ratio_wk3") + 
-  ylab("Propiionate Concentration wk3") 
+ xlab("F:B ratio wk3") + 
+  ylab("Propionate Concentration kg/mmol wk3")  + labs(title = "Underweight F:B Ratio and Propionate Concentration Correlation wk3")
 print(lm_wk3_pro_under_plot)
 
 lm_wk3_pro_under<-BMI_phylum_scfa %>%
@@ -865,6 +865,5 @@ summary(obwk3fb_wk3pro_test) #view results
 save_plot(filename = "figures/obwk3fb_wk3pro_plot.pdf", plot = obwk3fb_wk3pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
 ```
 The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among "obese" participants was 0.5005, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (-0.1162). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among participants whose BMI falls within the CDC's "Obese" category.
-
 
 #Final Conclusions
