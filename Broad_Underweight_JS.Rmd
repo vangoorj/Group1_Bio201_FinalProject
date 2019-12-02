@@ -1,0 +1,265 @@
+---
+title: "Workspace"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Packages
+```{r Load packages, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(cowplot)
+library(phyloseq)
+library(vegan)
+set.seed(7)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+
+You can also embed plots, for example:
+###Broad
+```{r}
+lm_Broad_BMI_plot_wk1<-BMI_phylum_scfa %>%
+  ggplot(aes(x = BMI,
+             y = fb_ratio_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("BMI") + 
+  ylab("FB_Ratio") 
+print(lm_Broad_BMI_plot_wk1)
+
+lm_Broad_BMI_wk1<-BMI_phylum_scfa %>%
+  lm(BMI ~ fb_ratio_wk1, data = .) #test relationship
+summary(lm_Broad_BMI_wk1)
+
+lm_Broad_BMI_plot_wk3<-BMI_phylum_scfa %>%
+  ggplot(aes(x = BMI,
+             y = fb_ratio_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("BMI") + 
+  ylab("FB_Ratio") 
+print(lm_Broad_BMI_plot_wk3)
+
+lm_Broad_wk3_BMI<-BMI_phylum_scfa %>%
+  lm(BMI ~ fb_ratio_wk3, data = .) #test relationship
+summary(lm_Broad3_BMI)
+
+
+save_plot(filename = "figures/lm_Broad_BMI_plot_wk1.pdf",
+          plot = lm_Broad_BMI_plot_wk1,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+save_plot(filename = "figures/lm_Broad_BMI_plot_wk3.pdf",
+          plot = lm_Broad_BMI_plot_wk3,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of all the participants is .94, which is not statistically significant. The R^2 value was also insignificant being very small at R^2=-.0073. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and BMI.
+
+Similarly, the week 3 F - B ratio and BMI also had an insignifcant p-value and R^2 value at p=.67 and R^2 = -.006 respectively. This also represents no significant correlation.
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+lm_wk1_but_Broad_plot<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = but_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("fb_ratio_wk1") + 
+  ylab("Butyrate Concentration wk1") 
+print(lm_wk1_but_Broad_plot)
+
+lm_wk1_but_Broad<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ but_wk1, data = .) #test relationship
+summary(lm_wk1_but_Broad)
+
+lm_wk3_but_Broad_plot<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = but_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("fb_ratio_wk3") + 
+  ylab("Butyrate Concentration wk3") 
+print(lm_wk3_but_Broad_plot)
+
+lm_wk3_but_Broad<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ but_wk3, data = .) #test relationship
+summary(lm_wk3_but_Broad)
+
+
+save_plot(filename = "figures/lm_wk1_but_Broad_plot.pdf",
+          plot = lm_wk1_but_Broad_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+save_plot(filename = "figures/lm_wk3_but_Broad_plot.pdf",
+          plot = lm_wk3_but_Broad_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+
+
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Butyrate concentration of all the participants is .0037, which is statistically significant. However, the R^2 value is insignificant being very small at R^2=0.0053, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Butyrate Concentration.
+
+The week 3 F - B ratio and week 3 Butyrate concentration of all the participants has a insignifcant p-value and R^2 value at p=.29 and R^2 = 0.0011 respectively. This also represents no significant correlation.
+
+```{r}
+lm_wk1_pro_Broad_plot<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = pro_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("fb_ratio_wk1") + 
+  ylab("Propionate Concentration wk1") 
+print(lm_wk1_pro_Broad_plot)
+
+lm_wk1_pro_Broad<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ pro_wk1, data = .) #test relationship
+summary(lm_wk1_pro_Broad)
+
+lm_wk3_pro_Broad_plot<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = pro_wk3))+
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("fb_ratio_wk3") + 
+  ylab("Propiionate Concentration wk3") 
+print(lm_wk3_pro_Broad_plot)
+
+lm_wk3_pro_Broad<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ pro_wk3, data = .) #test relationship
+summary(lm_wk3_pro_Broad)
+
+save_plot(filename = "figures/lm_wk1_pro_Broad_plot.pdf",
+          plot = lm_wk1_pro_Broad_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+save_plot(filename = "figures/lm_wk3_pro_Broad_plot.pdf",
+          plot = lm_wk3_pro_Broad_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Propionate concentration of all the participants is .0066, which is statistically significant. However, the R^2 value is insignificant being very small at R^2=0.0048, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Propionate concentration.
+
+Similarly, The week 3 F - B ratio and week 3 Propionate concentration of all the participants has a signifcant p-value and insignificant R^2 value at p=.0043 and R^2 = .053 respectively. This also represents no significant correlation.
+
+
+###UNDERWEIGHT
+```{r}
+lm_wk1_but_under_plot<-underweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = but_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("fb_ratio_wk1") + 
+  ylab("Butyrate Concentration wk1") 
+print(lm_wk1_but_under_plot)
+
+lm_wk1_but_under<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ but_wk1, data = .) #test relationship
+summary(lm_wk1_but_under)
+
+lm_wk3_but_under_plot<-underweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = but_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("fb_ratio_wk3") + 
+  ylab("Butyrate Concentration wk3") 
+print(lm_wk3_but_under_plot)
+
+lm_wk3_but_under<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ but_wk3, data = .) #test relationship
+summary(lm_wk3_but_under)
+
+
+save_plot(filename = "figures/lm_wk1_but_under_plot.pdf",
+          plot = lm_wk1_but_under_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+save_plot(filename = "figures/lm_wk3_but_under_plot.pdf",
+          plot = lm_wk3_but_under_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Butyrate concentration of the underweight participants is .0037, which is statistically significant. However, the R^2 value is insignificant being very small at R^2=0.0053, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Butyrate Concentration.
+
+The week 3 F - B ratio and week 3 Butyrate concentration of the underweight participants has a insignifcant p-value and R^2 value at p=.29 and R^2 = 0.0011 respectively. This also represents no significant correlation.
+
+```{r}
+lm_wk1_pro_under_plot<-underweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = pro_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("fb_ratio_wk1") + 
+  ylab("Propionate Concentration wk1") 
+print(lm_wk1_pro_under_plot)
+
+lm_wk1_pro_under<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ pro_wk1, data = .) #test relationship
+summary(lm_wk1_pro_under)
+
+lm_wk3_pro_under_plot<-underweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = pro_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("fb_ratio_wk3") + 
+  ylab("Propiionate Concentration wk3") 
+print(lm_wk3_pro_under_plot)
+
+lm_wk3_pro_under<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ pro_wk3, data = .) #test relationship
+summary(lm_wk3_pro_under)
+
+
+save_plot(filename = "figures/lm_wk1_pro_under_plot.pdf",
+          plot = lm_wk1_pro_under_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+save_plot(filename = "figures/lm_wk3_pro_under_plot.pdf",
+          plot = lm_wk3_pro_under_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Propionate concentration of all the participants is .0066, which is statistically significant. However, the R^2 value is insignificant being very small at R^2=0.0048, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Propionate concentration for underweight participants.
+
+Similarly, The week 3 F - B ratio and week 3 Propionate concentration for underweight participants has a signifcant p-value and insignificant R^2 value at p=.0043 and R^2 = .053 respectively. This also represents no significant correlation.
+
