@@ -229,31 +229,31 @@ write_delim(obese_phylum_scfa, path = "curated_data/obese_phylum_scfa.txt",
 ##Broad (All BMIs)
 ```{r}
 lm_Broad_BMI_plot_wk1<-BMI_phylum_scfa %>%
-  ggplot(aes(x = BMI,
-             y = fb_ratio_wk1)) + 
+  ggplot(aes(x = fb_ratio_wk1,
+             y = BMI)) + 
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("BMI") + 
-  ylab("FB_Ratio") + labs(title = "Broad BMI and F:B Ratio Correlation wk1")
+  xlab("FB_Ratio") + 
+  ylab("BMI") + labs(title = "Broad BMI and F:B Ratio Correlation wk1")
 print(lm_Broad_BMI_plot_wk1)
 
 lm_Broad_BMI_wk1<-BMI_phylum_scfa %>%
-  lm(BMI ~ fb_ratio_wk1, data = .) #test relationship
+  lm(fb_ratio_wk1 ~ BMI, data = .) #test relationship
 summary(lm_Broad_BMI_wk1)
 
 lm_Broad_BMI_plot_wk3<-BMI_phylum_scfa %>%
-  ggplot(aes(x = BMI,
-             y = fb_ratio_wk3)) + 
+  ggplot(aes(x = fb_ratio_wk3,
+             y = BMI)) + 
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
-  xlab("BMI") + 
-  ylab("FB_Ratio")  + labs(title = "Broad BMI and F:B Ratio Correlation wk3")
+  xlab("FB_Ratio") + 
+  ylab("BMI")  + labs(title = "Broad BMI and F:B Ratio Correlation wk3")
 print(lm_Broad_BMI_plot_wk3)
 
 lm_Broad_wk3_BMI<-BMI_phylum_scfa %>%
-  lm(BMI ~ fb_ratio_wk3, data = .) #test relationship
+  lm(fb_ratio_wk3 ~ BMI, data = .) #test relationship
 summary(lm_Broad_wk3_BMI)
 
 
@@ -306,12 +306,12 @@ summary(lm_wk3_but_Broad)
 save_plot(filename = "figures/lm_wk1_but_Broad_plot.pdf",
           plot = lm_wk1_but_Broad_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.2)
 
 save_plot(filename = "figures/lm_wk3_but_Broad_plot.pdf",
           plot = lm_wk3_but_Broad_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.2)
 
 
 
@@ -367,6 +367,27 @@ Similarly, The week 3 F - B ratio and week 3 Propionate concentration of all the
 
 ##Underweight
 ```{r}
+lm_under_BMI_wk1<-underweight_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ BMI, data = .) #test relationship
+summary(lm_under_BMI_wk1)
+#p-value = 0.6539
+#R-squared = -0.1082
+
+lm_under_BMI_plot_wk1<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = BMI)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("FB_Ratio") + 
+  ylab("BMI")  + labs(title = "Underweight BMI and F:B Ratio Correlation wk1")
+print(lm_under_BMI_plot_wk1)
+
+save_plot(filename = "figures/lm_under_BMI_plot_wk1.pdf",
+          plot = lm_under_BMI_plot_wk1,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 1.1)
+
 lm_wk1_but_under_plot<-underweight_phylum_scfa %>%
   ggplot(aes(x = fb_ratio_wk1,
              y = but_wk1)) + 
@@ -407,6 +428,8 @@ save_plot(filename = "figures/lm_wk3_but_under_plot.pdf",
           base_aspect_ratio = 1.1)
 
 ```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "underweight" participants was 0.6539, which is not statistically significant. Furthermore, the R value was extremely low (-0.1082), and therefore insignificant. There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "underweight" category.
+
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Butyrate concentration of the underweight participants is .0037, which is statistically significant. However, the R^2 value is insignificant being very small at R^2=0.0053, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Butyrate Concentration.
 
 The week 3 F - B ratio and week 3 Butyrate concentration of the underweight participants has a insignifcant p-value and R^2 value at p=.29 and R^2 = 0.0011 respectively. This also represents no significant correlation.
