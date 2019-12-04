@@ -635,7 +635,7 @@ ovwk1fb_BMI_plot<-overweight_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
- labs(title = "Ratio of Firmicutes to Bacteroidetes by overweight BMI",
+ labs(title = "Ratio of Firmicutes to Bacteroidetes by Overweight BMI",
          x = "Ratio of Firmicutes to Bacteroidetes",
          y = "BMI")
 print(ovwk1fb_BMI_plot)
@@ -767,7 +767,7 @@ obwk1fb_BMI_plot<-obese_phylum_scfa %>%
   geom_point() + #puts data points to match x and y coordinates
   geom_smooth(method = "lm", #used to create a linear best fit line
               se = FALSE) + #hides confidence interval around line 
- labs(title = "Ratio of Firmicutes to Bacteroidetes by overweight BMI",
+ labs(title = "Ratio of Firmicutes to Bacteroidetes by Obese BMI",
          x = "Ratio of Firmicutes to Bacteroidetes",
          y = "BMI")
 print(obwk1fb_BMI_plot)
