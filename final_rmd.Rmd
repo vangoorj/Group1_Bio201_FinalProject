@@ -261,12 +261,12 @@ summary(lm_Broad_wk3_BMI)
 save_plot(filename = "figures/lm_Broad_BMI_plot_wk1.pdf",
           plot = lm_Broad_BMI_plot_wk1,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 
 save_plot(filename = "figures/lm_Broad_BMI_plot_wk3.pdf",
           plot = lm_Broad_BMI_plot_wk3,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of all the participants is .94, which is not statistically significant. The R^2 value was also insignificant being very small at R^2=-.0073. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and BMI.
@@ -354,12 +354,12 @@ summary(lm_wk3_pro_Broad)
 save_plot(filename = "figures/lm_wk1_pro_Broad_plot.pdf",
           plot = lm_wk1_pro_Broad_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 
 save_plot(filename = "figures/lm_wk3_pro_Broad_plot.pdf",
           plot = lm_wk3_pro_Broad_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 
 
 ```
@@ -389,7 +389,7 @@ print(lm_under_BMI_plot_wk1)
 save_plot(filename = "figures/lm_under_BMI_plot_wk1.pdf",
           plot = lm_under_BMI_plot_wk1,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "underweight" participants was 0.6539, which is not statistically significant. Furthermore, the R value was extremely low (-0.1082), and therefore insignificant. There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "underweight" category.
 
@@ -428,12 +428,12 @@ summary(lm_wk3_but_under)
 save_plot(filename = "figures/lm_wk1_but_under_plot.pdf",
           plot = lm_wk1_but_under_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 
 save_plot(filename = "figures/lm_wk3_but_under_plot.pdf",
           plot = lm_wk3_but_under_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 
 ```
 
@@ -476,12 +476,12 @@ summary(lm_wk3_pro_under)
 save_plot(filename = "figures/lm_wk1_pro_under_plot.pdf",
           plot = lm_wk1_pro_under_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 
 save_plot(filename = "figures/lm_wk3_pro_under_plot.pdf",
           plot = lm_wk3_pro_under_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Propionate concentration of all the participants is .7707, which is not statistically significant. Additionally, the R^2 value is insignificant being very small at R^2=-0.01281, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Propionate concentration for underweight participants.
@@ -514,7 +514,7 @@ summary(hwk1fb_BMI_test) #view results
 save_plot(filename = "figures/hwk1fb_BMI_plot.pdf",
           plot = hwk1fb_BMI_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "healthy" participants was 0.3083, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (0.000465). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "Healthy" category.
 
@@ -543,7 +543,7 @@ summary(hwk1fb_wk1but_test) #view results
 save_plot(filename = "figures/hwk1fb_wk1but_plot.pdf",
           plot = hwk1fb_wk1but_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among "healthy" participants was 0.005637, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.06302). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among participants whose BMI falls within the CDC's "Healthy" category.
 
@@ -572,7 +572,7 @@ summary(hwk1fb_wk1pro_test) #view results
 save_plot(filename = "figures/hwk1fb_wk1pro_plot.pdf",
           plot = hwk1fb_wk1pro_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among "healthy" participants was 0.004754, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.06841). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among participants whose BMI falls within the CDC's "Healthy" category.
 
@@ -601,7 +601,7 @@ summary(hwk3fb_wk3but_test) #view results
 save_plot(filename = "figures/hwk3fb_wk3but_plot.pdf",
           plot = hwk3fb_wk3but_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 ```
 The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among "healthy" participants was 0.7948, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (-0.009043). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among participants whose BMI falls within the CDC's "Healthy" category.
 
@@ -630,7 +630,7 @@ summary(hwk3fb_wk3pro_test) #view results
 save_plot(filename = "figures/hwk3fb_wk3pro_plot.pdf",
           plot = hwk3fb_wk3pro_plot,
           nrow = 1, ncol = 1, 
-          base_aspect_ratio = 1.1)
+          base_aspect_ratio = 2.1)
 ```
 The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among "healthy" participants was 0.01675, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.04645). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among participants whose BMI falls within the CDC's "Healthy" category.
 
@@ -657,7 +657,7 @@ summary(ovwk1fb_BMI_test) #view results
 #Adjusted R-squared = 0.07309
 
 #Save Plot
-save_plot(filename = "figures/ovwk1fb_BMI_plot.pdf", plot = ovwk1fb_BMI_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/ovwk1fb_BMI_plot.pdf", plot = ovwk1fb_BMI_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "overweight" participants was 0.1314, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (0.07309). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "Overweight" category.
 
@@ -683,7 +683,7 @@ summary(ovwk1fb_wk1but_test) #view results
 #Adjusted R-squared = 0.0108
 
 #Save Plot
-save_plot(filename = "figures/ovwk1fb_wk1but_plot.pdf", plot = ovwk1fb_wk1but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/ovwk1fb_wk1but_plot.pdf", plot = ovwk1fb_wk1but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among "overweight" participants was 0.2863, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.0108). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among participants whose BMI falls within the CDC's "Overweight" category.
 
@@ -709,7 +709,7 @@ summary(ovwk1fb_wk1pro_test) #view results
 #Adjusted R-squared = -0.01058
 
 #Save Plot
-save_plot(filename = "figures/ovwk1fb_wk1pro_plot.pdf", plot = ovwk1fb_wk1pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/ovwk1fb_wk1pro_plot.pdf", plot = ovwk1fb_wk1pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among "overweight" participants was 0.3802, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (-0.01058). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among participants whose BMI falls within the CDC's "Overweight" category.
 
@@ -736,7 +736,7 @@ summary(ovwk3fb_wk3but_test) #view results
 #Adjusted R-squared = 0.09483
 
 #Save Plot
-save_plot(filename = "figures/ovwk3fb_wk3but_plot.pdf", plot = ovwk3fb_wk3but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/ovwk3fb_wk3but_plot.pdf", plot = ovwk3fb_wk3but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among "overweight" participants was 0.1009, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (0.09483). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among participants whose BMI falls within the CDC's "Overweight" category.
 
@@ -762,7 +762,7 @@ summary(ovwk3fb_wk3pro_test) #view results
 #Adjusted R-squared = 0.1865
 
 #Save Plot
-save_plot(filename = "figures/ovwk3fb_wk3pro_plot.pdf", plot = ovwk3fb_wk3pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/ovwk3fb_wk3pro_plot.pdf", plot = ovwk3fb_wk3pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among "healthy" participants was 0.03267, which technically supports the alternative hypothesis. However, the R value was an insignificant value (0.1865). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among participants whose BMI falls within the CDC's "Overweight" category.
 
@@ -789,7 +789,7 @@ summary(obwk1fb_BMI_test) #view results
 #Adjusted R-squared = 0.3331
 
 #Save Plot
-save_plot(filename = "figures/obwk1fb_BMI_plot.pdf", plot = obwk1fb_BMI_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/obwk1fb_BMI_plot.pdf", plot = obwk1fb_BMI_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "obese" participants was 0.9823, which is not statistically significant. Furthermore, the R value was an insignificant value (0.3331). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "Obese" category.
 
@@ -815,7 +815,7 @@ summary(obwk1fb_wk1but_test) #view results
 #Adjusted R-squared = -0.1433
 
 #Save Plot
-save_plot(filename = "figures/obwk1fb_wk1but_plot.pdf", plot = obwk1fb_wk1but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/obwk1fb_wk1but_plot.pdf", plot = obwk1fb_wk1but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among "obese" participants was 0.531, which falls within a 95% confidence interval. However, the R value was an insignificant value (-0.1433). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among participants whose BMI falls within the CDC's "Obese" category.
 
@@ -842,7 +842,7 @@ summary(obwk1fb_wk1pro_test) #view results
 
 
 #Save Plot
-save_plot(filename = "figures/obwk1fb_wk1pro_plot.pdf", plot = obwk1fb_wk1pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/obwk1fb_wk1pro_plot.pdf", plot = obwk1fb_wk1pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among "obese" participants was 0.8775, which falls within a 95% confidence interval. However, the R value was an insignificant value (-0.4775). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among participants whose BMI falls within the CDC's "Obese" category.
 
@@ -868,7 +868,7 @@ summary(obwk3fb_wk3but_test) #view results
 #Adjusted R-squared = -0.1086
 
 #Save Plot
-save_plot(filename = "figures/obwk3fb_wk3but_plot.pdf", plot = obwk3fb_wk3but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/obwk3fb_wk3but_plot.pdf", plot = obwk3fb_wk3but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among "obese" participants was 0.4923, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (-0.1086). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among participants whose BMI falls within the CDC's "Obese" category.
 
@@ -894,7 +894,7 @@ summary(obwk3fb_wk3pro_test) #view results
 #Adjusted R-squared = -0.1162
 
 #Save Plot
-save_plot(filename = "figures/obwk3fb_wk3pro_plot.pdf", plot = obwk3fb_wk3pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 1:1)
+save_plot(filename = "figures/obwk3fb_wk3pro_plot.pdf", plot = obwk3fb_wk3pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
 ```
 The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among "obese" participants was 0.5005, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (-0.1162). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among participants whose BMI falls within the CDC's "Obese" category.
 
