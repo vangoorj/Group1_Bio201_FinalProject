@@ -1,7 +1,9 @@
 ---
 title: "Group1_finalprojectRmd"
-output: html_document
-names: "Julia Van Goor, Joshua Strauss, Alex Yang"
+output:
+  pdf_document: default
+  html_document: default
+names: Julia Van Goor, Joshua Strauss, Alex Yang
 ---
 # Set Working Directory
 ```{r setup, include=FALSE}
