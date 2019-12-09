@@ -391,6 +391,7 @@ save_plot(filename = "figures/lm_under_BMI_plot_wk1.pdf",
           nrow = 1, ncol = 1, 
           base_aspect_ratio = 1.1)
 ```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "underweight" participants was 0.6539, which is not statistically significant. Furthermore, the R value was extremely low (-0.1082), and therefore insignificant. There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "underweight" category.
 
 ###F:B and Butyrate
 ```{r}
@@ -435,12 +436,13 @@ save_plot(filename = "figures/lm_wk3_but_under_plot.pdf",
           base_aspect_ratio = 1.1)
 
 ```
-The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "underweight" participants was 0.6539, which is not statistically significant. Furthermore, the R value was extremely low (-0.1082), and therefore insignificant. There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "underweight" category.
 
-The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Butyrate concentration of the underweight participants is .0037, which is statistically significant. However, the R^2 value is insignificant being very small at R^2=0.0053, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Butyrate Concentration.
 
-The week 3 F - B ratio and week 3 Butyrate concentration of the underweight participants has a insignifcant p-value and R^2 value at p=.29 and R^2 = 0.0011 respectively. This also represents no significant correlation.
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Butyrate concentration of the underweight participants is .79, which is not statistically significant. However, the R^2 value is insignificant being very small at R^2=-.1308, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Butyrate Concentration.
 
+The week 3 F:B ratio and week 3 Butyrate concentration of the underweight participants has a insignifcant p-value and R^2 value at p=.3424 and R^2 = 0.004608 respectively. This also represents no significant correlation.
+
+###F:B and Propionate
 ```{r}
 lm_wk1_pro_under_plot<-underweight_phylum_scfa %>%
   ggplot(aes(x = fb_ratio_wk1,
@@ -482,9 +484,9 @@ save_plot(filename = "figures/lm_wk3_pro_under_plot.pdf",
           base_aspect_ratio = 1.1)
 
 ```
-The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Propionate concentration of all the participants is .0066, which is statistically significant. However, the R^2 value is insignificant being very small at R^2=0.0048, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Propionate concentration for underweight participants.
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Propionate concentration of all the participants is .7707, which is not statistically significant. Additionally, the R^2 value is insignificant being very small at R^2=-0.01281, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Propionate concentration for underweight participants.
 
-Similarly, The week 3 F - B ratio and week 3 Propionate concentration for underweight participants has a signifcant p-value and insignificant R^2 value at p=.0043 and R^2 = .053 respectively. This also represents no significant correlation.
+Similarly, The week 3 F - B ratio and week 3 Propionate concentration for underweight participants has a signifcant p-value and insignificant R^2 value at p=0.588 and R^2 = -0.1063 respectively. This also represents no significant correlation.
 
 ##Healthy Weight
 ###Wk1 F:B and BMI
