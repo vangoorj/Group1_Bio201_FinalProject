@@ -1,0 +1,1408 @@
+---
+title: "Group1_finalprojectRmd"
+output: html_document
+names: "Julia Van Goor, Joshua Strauss, Alex Yang"
+---
+# Set Working Directory
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/Owner/Documents/Group1_Bio201_FinalProject/")
+```
+
+
+# Load Packages
+```{r Load packages, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(cowplot)
+library(phyloseq)
+library(vegan)
+set.seed(7)
+```
+
+#Import Data
+```{r}
+library(readr)
+biographical <- read_delim("~/Group1_Bio201_FinalProject/raw_data/biographical.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+View(biographical)
+
+library(readr)
+phylum_avg_shared <- read_delim("~/Group1_Bio201_FinalProject/raw_data/phylum_avg_shared.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+View(phylum_avg_shared)
+
+library(readr)
+all_data_wkly <- read_delim("~/Group1_Bio201_FinalProject/raw_data/Bigzipfile/all_data_wkly.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+View(all_data_wkly)
+
+```
+
+#Tidy Data
+##Butyrate and Propionate df
+```{r}
+c_all_data_wkly <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") #curated all data weekly: keep only weeks and supplements of interest
+
+#wide dfs
+but_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
+
+pro_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, propionate_mean) %>% 
+  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
+
+but_pro_wide <- inner_join(x = but_wide, y = pro_wide,
+                    by = c("participant_id", 
+                           "semester", "supplement_consumed", "frequency")) %>%
+  rename(but_wk1 = week1.x, but_wk3 = week3.x, pro_wk1 = week1.y, pro_wk3 = week3.y) %>% 
+  select(-starts_with("quantity_compliant")) #all measurements by participant ID
+
+#Save Data Frames: 
+write_delim(c_all_data_wkly, path = "curated_data/c_all_data_wkly.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(but_wide, path = "curated_data/but_wide.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(pro_wide, path = "curated_data/pro_wide.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(but_pro_wide, path = "curated_data/but_pro_wide.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+```
+
+##BMI df
+```{r}
+BMI_data <- biographical %>% 
+  rename_all(tolower) %>%
+  select(participant_id, sex, age, race_ethnicity, weight_kg, height_meters) %>%
+  drop_na(weight_kg, height_meters) %>%
+  mutate(BMI = weight_kg/(height_meters)^2) #calculate all BMIs; n = 252
+
+underweight_BMI <- BMI_data %>% 
+  filter(BMI < 18.5) #subset by CDC category: underweight - n = 12
+
+healthy_BMI <- BMI_data %>% 
+  filter(BMI >= 18.5, BMI < 25) #subset by CDC category: healthy - n = 186
+
+overweight_BMI <- BMI_data %>% 
+  filter(BMI >= 25, BMI < 30) #subset by CDC category: overweight - n = 39
+
+obese_BMI <- BMI_data %>% 
+  filter(BMI >= 30) #subset by CDC category: obese - n = 15
+
+#total n = 252
+
+#Save Data Frames
+write_delim(BMI_data, path = "curated_data/BMI_data.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(underweight_BMI, path = "curated_data/underweight_BMI.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(healthy_BMI, path = "curated_data/healthy_BMI.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(overweight_BMI, path = "curated_data/overweight_BMI.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(obese_BMI, path = "curated_data/obese_BMI.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+```
+
+##Phylum df
+```{r}
+#Creating Processed Phylum Data Frame:
+phylum_processed_df <- phylum_avg_shared %>%
+  rename_all(tolower) %>%
+  filter(study_week == "week1" | study_week == "week3") %>%
+  select("participant_id", "semester", "study_week", "firmicutes", "bacteroidetes <bacteroidetes>") %>%
+  rename(., "bacteroidetes" = "bacteroidetes <bacteroidetes>") %>%
+  mutate(., f_b_ratio = firmicutes/bacteroidetes)
+
+#Checking Sample Sizes for Consistency by Week:
+phylum_processed_df %>%
+  filter(study_week == "week1") %>%
+  summarise(sample_size = n()) # n = 508
+
+phylum_processed_df %>%
+  filter(study_week == "week3") %>%
+  summarise(sample_size = n()) # n = 480. 508-480 = 28 inconsistencies. 
+
+#Split by Weeks and Recombine so only samples with both weeks present: 
+phylum_week1 <- phylum_processed_df %>%
+  filter(study_week == "week1")
+
+phylum_week3 <- phylum_processed_df %>%
+  filter(study_week == "week3")
+phylum_week3
+
+phylum_processed_df_both_weeks_present <- inner_join(phylum_week1, phylum_week3, by = (c("participant_id")))
+
+#Final Data Frames:
+phylum_processed_df
+phylum_processed_df_both_weeks_present
+
+phylum_processed_df_both_weeks_present_final <- phylum_processed_df_both_weeks_present %>%
+  rename(firmicutes_wk1 = firmicutes.x, bacteroidetes_wk1 = bacteroidetes.x, fb_ratio_wk1 =  
+  f_b_ratio.x, firmicutes_wk3 = firmicutes.y, bacteroidetes_wk3 = bacteroidetes.y, fb_ratio_wk3 = 
+  f_b_ratio.y, semester = semester.x) %>%
+  select(-starts_with("study_week"), -starts_with("semester.y"))
+View(phylum_processed_df_both_weeks_present_final)
+
+#Save data frames: 
+write_delim(phylum_processed_df, path = "curated_data/phylum_processed_df.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(phylum_processed_df_both_weeks_present, path = "curated_data/phylum_processed_df_both_weeks_present.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(phylum_processed_df_both_weeks_present_final, path = "curated_data/phylum_processed_df_both_weeks_present_final.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+```
+
+##Joined BMI and scfas
+```{r}
+BMI_but_pro <- inner_join(x = BMI_data, y = but_pro_wide,
+                          by = c("participant_id")) #n = 178
+
+underweight_but_pro <- inner_join(x= underweight_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 10
+
+healthy_but_pro <- inner_join(x= healthy_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 133
+
+overweight_but_pro <-  inner_join(x= overweight_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 25
+
+obese_but_pro <-  inner_join(x= obese_BMI, y = but_pro_wide,
+                                  by = c("participant_id")) #n = 10
+#total n = 178
+
+#Save Data Frames
+write_delim(BMI_but_pro, path = "curated_data/BMI_but_pro.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(underweight_but_pro, path = "curated_data/underweight_but_pro.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(healthy_but_pro, path = "curated_data/healthy_but_pro.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(overweight_but_pro, path = "curated_data/overweight_but_pro.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(obese_but_pro, path = "curated_data/obese_but_pro.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+```
+
+##Joined BMI, scfas, and phylums
+```{r}
+BMI_phylum_scfa <- inner_join(x = BMI_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 139
+
+underweight_phylum_scfa  <- inner_join(x = underweight_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 9
+
+healthy_phylum_scfa <- inner_join(x = healthy_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 105
+
+overweight_phylum_scfa <- inner_join(x = overweight_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 20
+
+obese_phylum_scfa <- inner_join(x = obese_but_pro, y = phylum_processed_df_both_weeks_present_final,
+                          by = c("participant_id")) #n = 5
+
+#Save Data Frames
+write_delim(BMI_phylum_scfa, path = "curated_data/BMI_phylum_scfa.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(underweight_phylum_scfa, path = "curated_data/underweight_phylum_scfa.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(healthy_phylum_scfa, path = "curated_data/healthy_phylum_scfa.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(overweight_phylum_scfa, path = "curated_data/overweight_phylum_scfa.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+write_delim(obese_phylum_scfa, path = "curated_data/obese_phylum_scfa.txt",
+            delim = "\t", col_names = TRUE, quote = FALSE)
+```
+
+#Analysis
+##Broad (All BMIs)
+###F:B and BMI
+```{r}
+lm_Broad_BMI_plot_wk1<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = BMI)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("FB_Ratio") + 
+  ylab("BMI") + labs(title = "Broad BMI and F:B Ratio Correlation wk1")
+print(lm_Broad_BMI_plot_wk1)
+
+lm_Broad_BMI_wk1<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ BMI, data = .) #test relationship
+summary(lm_Broad_BMI_wk1)
+
+lm_Broad_BMI_plot_wk3<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = BMI)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("FB_Ratio") + 
+  ylab("BMI")  + labs(title = "Broad BMI and F:B Ratio Correlation wk3")
+print(lm_Broad_BMI_plot_wk3)
+
+lm_Broad_wk3_BMI<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ BMI, data = .) #test relationship
+summary(lm_Broad_wk3_BMI)
+
+
+save_plot(filename = "figures/lm_Broad_BMI_plot_wk1.pdf",
+          plot = lm_Broad_BMI_plot_wk1,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+
+save_plot(filename = "figures/lm_Broad_BMI_plot_wk3.pdf",
+          plot = lm_Broad_BMI_plot_wk3,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of all the participants is .94, which is not statistically significant. The R^2 value was also insignificant being very small at R^2=-.0073. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and BMI.
+
+Similarly, the week 3 F - B ratio and BMI also had an insignifcant p-value and R^2 value at p=.67 and R^2 = -.006 respectively. This also represents no significant correlation.
+
+###F:B and Butyrate
+```{r}
+lm_wk1_but_Broad_plot<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = but_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("F:B ratio wk1") + 
+  ylab("Butyrate Concentration kg/mmol wk1")  + labs(title = "Broad F:B Ratio and Butyrate Concentration Correlation wk1")
+print(lm_wk1_but_Broad_plot)
+
+lm_wk1_but_Broad<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ but_wk1, data = .) #test relationship
+summary(lm_wk1_but_Broad)
+
+lm_wk3_but_Broad_plot<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = but_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("F:B ratio wk3") + 
+  ylab("Butyrate Concentration kg/mmol wk3")  + labs(title = "Broad F:B Ratio and Butyrate Concentration Correlation wk3")
+print(lm_wk3_but_Broad_plot)
+
+lm_wk3_but_Broad<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ but_wk3, data = .) #test relationship
+summary(lm_wk3_but_Broad)
+
+
+save_plot(filename = "figures/lm_wk1_but_Broad_plot.pdf",
+          plot = lm_wk1_but_Broad_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.2)
+
+save_plot(filename = "figures/lm_wk3_but_Broad_plot.pdf",
+          plot = lm_wk3_but_Broad_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.2)
+
+
+
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Butyrate concentration of all the participants is .0037, which is statistically significant. However, the R^2 value is insignificant being very small at R^2=0.0053, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Butyrate Concentration.
+
+The week 3 F - B ratio and week 3 Butyrate concentration of all the participants has a insignifcant p-value and R^2 value at p=.29 and R^2 = 0.0011 respectively. This also represents no significant correlation.
+
+###F:B and Propionate
+```{r}
+lm_wk1_pro_Broad_plot<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = pro_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("F:B ratio wk1") + 
+  ylab("Propionate Concentration kg/mmol wk1")  + labs(title = "Broad F:B Ratio and Propionate Concentration Correlation wk1")
+print(lm_wk1_pro_Broad_plot)
+
+lm_wk1_pro_Broad<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ pro_wk1, data = .) #test relationship
+summary(lm_wk1_pro_Broad)
+
+lm_wk3_pro_Broad_plot<-BMI_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = pro_wk3))+
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("F:B ratio wk3") + 
+  ylab("Propionate Concentration kg/mmol wk3")  + labs(title = "Broad F:B Ratio and Propionate Concentration Correlation wk3")
+print(lm_wk3_pro_Broad_plot)
+
+lm_wk3_pro_Broad<-BMI_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ pro_wk3, data = .) #test relationship
+summary(lm_wk3_pro_Broad)
+
+save_plot(filename = "figures/lm_wk1_pro_Broad_plot.pdf",
+          plot = lm_wk1_pro_Broad_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+
+save_plot(filename = "figures/lm_wk3_pro_Broad_plot.pdf",
+          plot = lm_wk3_pro_Broad_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+
+
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Propionate concentration of all the participants is .0066, which is statistically significant. However, the R^2 value is insignificant being very small at R^2=0.0048, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Propionate concentration.
+
+Similarly, The week 3 F - B ratio and week 3 Propionate concentration of all the participants has a signifcant p-value and insignificant R^2 value at p=.0043 and R^2 = .053 respectively. This also represents no significant correlation.
+
+##Underweight
+###F:B and BMI
+```{r}
+lm_under_BMI_wk1<-underweight_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ BMI, data = .) #test relationship
+summary(lm_under_BMI_wk1)
+#p-value = 0.6539
+#R-squared = -0.1082
+
+lm_under_BMI_plot_wk1<-underweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = BMI)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("FB_Ratio") + 
+  ylab("BMI")  + labs(title = "Underweight BMI and F:B Ratio Correlation wk1")
+print(lm_under_BMI_plot_wk1)
+
+save_plot(filename = "figures/lm_under_BMI_plot_wk1.pdf",
+          plot = lm_under_BMI_plot_wk1,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "underweight" participants was 0.6539, which is not statistically significant. Furthermore, the R value was extremely low (-0.1082), and therefore insignificant. There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "underweight" category.
+
+###F:B and Butyrate
+```{r}
+
+lm_wk1_but_under_plot<-underweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = but_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("F:B ratio wk1") + 
+  ylab("Butyrate Concentration kg/mmol wk1")  + labs(title = "Underweight F:B Ratio and Butyrate Concentration Correlation wk1")
+print(lm_wk1_but_under_plot)
+
+lm_wk1_but_under<-underweight_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ but_wk1, data = .) #test relationship
+summary(lm_wk1_but_under)
+
+lm_wk3_but_under_plot<-underweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = but_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("F:B ratio wk3") + 
+  ylab("Butyrate Concentration kg/mmol wk3")  + labs(title = "Underweight F:B Ratio and Butyrate Concentration Correlation wk3") 
+print(lm_wk3_but_under_plot)
+
+lm_wk3_but_under<-underweight_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ but_wk3, data = .) #test relationship
+summary(lm_wk3_but_under)
+
+
+save_plot(filename = "figures/lm_wk1_but_under_plot.pdf",
+          plot = lm_wk1_but_under_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+
+save_plot(filename = "figures/lm_wk3_but_under_plot.pdf",
+          plot = lm_wk3_but_under_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+
+```
+
+
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Butyrate concentration of the underweight participants is .79, which is not statistically significant. However, the R^2 value is insignificant being very small at R^2=-.1308, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Butyrate Concentration.
+
+The week 3 F:B ratio and week 3 Butyrate concentration of the underweight participants has a insignifcant p-value and R^2 value at p=.3424 and R^2 = 0.004608 respectively. This also represents no significant correlation.
+
+###F:B and Propionate
+```{r}
+lm_wk1_pro_under_plot<-underweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = pro_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+   xlab("F:B ratio wk1") + 
+  ylab("Propionate Concentration kg/mmol wk1")  + labs(title = "Underweight F:B Ratio and Propionate Concentration Correlation wk1")
+print(lm_wk1_pro_under_plot)
+
+lm_wk1_pro_under<-underweight_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ pro_wk1, data = .) #test relationship
+summary(lm_wk1_pro_under)
+
+lm_wk3_pro_under_plot<-underweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = pro_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ xlab("F:B ratio wk3") + 
+  ylab("Propionate Concentration kg/mmol wk3")  + labs(title = "Underweight F:B Ratio and Propionate Concentration Correlation wk3")
+print(lm_wk3_pro_under_plot)
+
+lm_wk3_pro_under<-underweight_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ pro_wk3, data = .) #test relationship
+summary(lm_wk3_pro_under)
+
+
+save_plot(filename = "figures/lm_wk1_pro_under_plot.pdf",
+          plot = lm_wk1_pro_under_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+
+save_plot(filename = "figures/lm_wk3_pro_under_plot.pdf",
+          plot = lm_wk3_pro_under_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 Propionate concentration of all the participants is .7707, which is not statistically significant. Additionally, the R^2 value is insignificant being very small at R^2=-0.01281, which represents too much variation in the data. There is no significant correlation between the week 1 firmicutes - bacteroidetes ratio and Propionate concentration for underweight participants.
+
+Similarly, The week 3 F - B ratio and week 3 Propionate concentration for underweight participants has a signifcant p-value and insignificant R^2 value at p=0.588 and R^2 = -0.1063 respectively. This also represents no significant correlation.
+
+##Healthy Weight
+###Wk1 F:B and BMI
+```{r}
+#PLOT
+hwk1fb_BMI_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = BMI)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Ratio of Firmicutes to Bacteroidetes by healthy BMI",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "BMI")
+print(hwk1fb_BMI_plot)
+
+#TEST
+hwk1fb_BMI_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ BMI, data = .) #test relationship
+summary(hwk1fb_BMI_test) #view results 
+#p-value = 0.3083
+#Adjusted R-squared = 0.000465
+
+#Save Plot
+save_plot(filename = "figures/hwk1fb_BMI_plot.pdf",
+          plot = hwk1fb_BMI_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "healthy" participants was 0.3083, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (0.000465). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "Healthy" category.
+
+###Wk1 F:B and Wk1 Butyrate
+```{r}
+#PLOT
+hwk1fb_wk1but_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = but_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 1 Ratio of Firmicutes to Bacteroidetes by Butyrate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Butyrate Concentration (mmol/kg)")
+print(hwk1fb_wk1but_plot)
+
+#TEST
+hwk1fb_wk1but_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ but_wk1, data = .) #test relationship
+summary(hwk1fb_wk1but_test) #view results 
+#p-value = 0.005637
+#Adjusted R-squared = 0.06302
+
+#Save Plot
+save_plot(filename = "figures/hwk1fb_wk1but_plot.pdf",
+          plot = hwk1fb_wk1but_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among "healthy" participants was 0.005637, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.06302). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among participants whose BMI falls within the CDC's "Healthy" category.
+
+###Wk1 F:B and Wk1 Propionate
+```{r}
+#PLOT
+hwk1fb_wk1pro_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = pro_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 1 Ratio of Firmicutes to Bacteroidetes by Propionate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Propionate Concentration (mmol/kg)")
+print(hwk1fb_wk1pro_plot)
+
+#TEST
+hwk1fb_wk1pro_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ pro_wk1, data = .) #test relationship
+summary(hwk1fb_wk1pro_test) #view results 
+#p-value = 0.004754
+#Adjusted R-squared = 0.06841
+
+#Save Plot
+save_plot(filename = "figures/hwk1fb_wk1pro_plot.pdf",
+          plot = hwk1fb_wk1pro_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among "healthy" participants was 0.004754, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.06841). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among participants whose BMI falls within the CDC's "Healthy" category.
+
+###Wk3 F:B and Wk3 Butyrate
+```{r}
+#PLOT
+hwk3fb_wk3but_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = but_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 3 Ratio of Firmicutes to Bacteroidetes by Butyrate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Butyrate Concentration (mmol/kg)")
+print(hwk3fb_wk3but_plot)
+
+#TEST
+hwk3fb_wk3but_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ but_wk3, data = .) #test relationship
+summary(hwk3fb_wk3but_test) #view results 
+#p-value = 0.7948
+#Adjusted R-squared = -0.009043
+
+#Save Plot
+save_plot(filename = "figures/hwk3fb_wk3but_plot.pdf",
+          plot = hwk3fb_wk3but_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+```
+The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among "healthy" participants was 0.7948, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (-0.009043). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among participants whose BMI falls within the CDC's "Healthy" category.
+
+###Wk3 F:B and Wk3 Propionate
+```{r}
+#PLOT
+hwk3fb_wk3pro_plot<-healthy_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = pro_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 3 Ratio of Firmicutes to Bacteroidetes by Propionate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Propionate Concentration (mmol/kg)")
+print(hwk3fb_wk3pro_plot)
+
+#TEST
+hwk3fb_wk3pro_test <- healthy_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ pro_wk3, data = .) #test relationship
+summary(hwk3fb_wk3pro_test) #view results 
+#p-value = 0.01675
+#Adjusted R-squared = 0.04645
+
+#Save Plot
+save_plot(filename = "figures/hwk3fb_wk3pro_plot.pdf",
+          plot = hwk3fb_wk3pro_plot,
+          nrow = 1, ncol = 1, 
+          base_aspect_ratio = 2.1)
+```
+The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among "healthy" participants was 0.01675, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.04645). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among participants whose BMI falls within the CDC's "Healthy" category.
+
+##Overweight
+##Wk1 F:B and BMI
+```{r}
+#PLOT
+ovwk1fb_BMI_plot<-overweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = BMI)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Ratio of Firmicutes to Bacteroidetes by Overweight BMI",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "BMI")
+print(ovwk1fb_BMI_plot)
+
+#TEST
+ovwk1fb_BMI_test <- overweight_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ BMI, data = .) #test relationship
+summary(ovwk1fb_BMI_test) #view results 
+#p-value = 0.1314
+#Adjusted R-squared = 0.07309
+
+#Save Plot
+save_plot(filename = "figures/ovwk1fb_BMI_plot.pdf", plot = ovwk1fb_BMI_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "overweight" participants was 0.1314, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (0.07309). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "Overweight" category.
+
+###Wk1 F:B and Wk1 Butyrate
+```{r}
+#PLOT
+ovwk1fb_wk1but_plot<-overweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = but_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 1 Ratio of Firmicutes to Bacteroidetes by Butyrate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Butyrate Concentration (mmol/kg)")
+print(ovwk1fb_wk1but_plot)
+
+#TEST
+ovwk1fb_wk1but_test <- overweight_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ but_wk1, data = .) #test relationship
+summary(ovwk1fb_wk1but_test) #view results 
+#p-value = 0.2863
+#Adjusted R-squared = 0.0108
+
+#Save Plot
+save_plot(filename = "figures/ovwk1fb_wk1but_plot.pdf", plot = ovwk1fb_wk1but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among "overweight" participants was 0.2863, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (0.0108). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among participants whose BMI falls within the CDC's "Overweight" category.
+
+###Wk1 F:B and Wk1 Propionate
+```{r}
+#PLOT
+ovwk1fb_wk1pro_plot<-overweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = pro_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 1 Ratio of Firmicutes to Bacteroidetes by Propionate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Propionate Concentration (mmol/kg)")
+print(ovwk1fb_wk1pro_plot)
+
+#TEST
+ovwk1fb_wk1pro_test <- overweight_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ pro_wk1, data = .) #test relationship
+summary(ovwk1fb_wk1pro_test) #view results 
+#p-value = 0.3802
+#Adjusted R-squared = -0.01058
+
+#Save Plot
+save_plot(filename = "figures/ovwk1fb_wk1pro_plot.pdf", plot = ovwk1fb_wk1pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among "overweight" participants was 0.3802, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (-0.01058). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among participants whose BMI falls within the CDC's "Overweight" category.
+
+
+###Wk3 F:B and Wk3 Butyrate
+```{r}
+#PLOT
+ovwk3fb_wk3but_plot<-overweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = but_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 3 Ratio of Firmicutes to Bacteroidetes by Butyrate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Butyrate Concentration (mmol/kg)")
+print(ovwk3fb_wk3but_plot)
+
+#TEST
+ovwk3fb_wk3but_test <- overweight_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ but_wk3, data = .) #test relationship
+summary(ovwk3fb_wk3but_test) #view results 
+#p-value = 0.1009
+#Adjusted R-squared = 0.09483
+
+#Save Plot
+save_plot(filename = "figures/ovwk3fb_wk3but_plot.pdf", plot = ovwk3fb_wk3but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among "overweight" participants was 0.1009, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (0.09483). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among participants whose BMI falls within the CDC's "Overweight" category.
+
+###Wk3 F:B and Wk3 Propionate
+```{r}
+#PLOT
+ovwk3fb_wk3pro_plot<-overweight_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = pro_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 3 Ratio of Firmicutes to Bacteroidetes by Propionate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Propionate Concentration (mmol/kg)")
+print(ovwk3fb_wk3pro_plot)
+
+#TEST
+ovwk3fb_wk3pro_test <- overweight_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ pro_wk3, data = .) #test relationship
+summary(ovwk3fb_wk3pro_test) #view results 
+#p-value = 0.03267
+#Adjusted R-squared = 0.1865
+
+#Save Plot
+save_plot(filename = "figures/ovwk3fb_wk3pro_plot.pdf", plot = ovwk3fb_wk3pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among "healthy" participants was 0.03267, which technically supports the alternative hypothesis. However, the R value was an insignificant value (0.1865). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among participants whose BMI falls within the CDC's "Overweight" category.
+
+##Obese
+###Wk1 F:B and BMI
+```{r}
+#PLOT
+obwk1fb_BMI_plot<-obese_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = BMI)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Ratio of Firmicutes to Bacteroidetes by Obese BMI",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "BMI")
+print(obwk1fb_BMI_plot)
+
+#TEST
+obwk1fb_BMI_test <- obese_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ BMI, data = .) #test relationship
+summary(obwk1fb_BMI_test) #view results 
+#p-value = 0.9823
+#Adjusted R-squared = 0.3331
+
+#Save Plot
+save_plot(filename = "figures/obwk1fb_BMI_plot.pdf", plot = obwk1fb_BMI_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the BMI of "obese" participants was 0.9823, which is not statistically significant. Furthermore, the R value was an insignificant value (0.3331). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and BMI among participants whose BMI falls within the CDC's "Obese" category.
+
+###Wk1 F:B and Wk1 Butyrate
+```{r}
+#PLOT
+obwk1fb_wk1but_plot<-obese_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = but_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 1 Ratio of Firmicutes to Bacteroidetes by Butyrate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Butyrate Concentration (mmol/kg)")
+print(obwk1fb_wk1but_plot)
+
+#TEST
+obwk1fb_wk1but_test <- obese_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ but_wk1, data = .) #test relationship
+summary(obwk1fb_wk1but_test) #view results 
+#p-value = 0.531
+#Adjusted R-squared = -0.1433
+
+#Save Plot
+save_plot(filename = "figures/obwk1fb_wk1but_plot.pdf", plot = obwk1fb_wk1but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among "obese" participants was 0.531, which falls within a 95% confidence interval. However, the R value was an insignificant value (-0.1433). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average butyrate concentration among participants whose BMI falls within the CDC's "Obese" category.
+
+###Wk1 F:B and Wk1 Propionate
+```{r}
+#PLOT
+obwk1fb_wk1pro_plot<-obese_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk1,
+             y = pro_wk1)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 1 Ratio of Firmicutes to Bacteroidetes by Propionate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Propionate Concentration (mmol/kg)")
+print(obwk1fb_wk1pro_plot)
+
+#TEST
+obwk1fb_wk1pro_test <- obese_phylum_scfa %>%
+  lm(fb_ratio_wk1 ~ pro_wk1, data = .) #test relationship
+summary(obwk1fb_wk1pro_test) #view results 
+#p-value = 0.8775
+#Adjusted R-squared = -0.4775
+
+
+#Save Plot
+save_plot(filename = "figures/obwk1fb_wk1pro_plot.pdf", plot = obwk1fb_wk1pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among "obese" participants was 0.8775, which falls within a 95% confidence interval. However, the R value was an insignificant value (-0.4775). There does not appear to be a statistically significant linear relationship between the week 1 firmicutes to bacteroidetes ratio and the week 1 average propionate concentration among participants whose BMI falls within the CDC's "Obese" category.
+
+###Wk3 F:B and Wk3 Butyrate
+```{r}
+#PLOT
+obwk3fb_wk3but_plot<-obese_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = but_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 3 Ratio of Firmicutes to Bacteroidetes by Butyrate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Butyrate Concentration (mmol/kg)")
+print(obwk3fb_wk3but_plot)
+
+#TEST
+obwk3fb_wk3but_test <- obese_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ but_wk3, data = .) #test relationship
+summary(obwk3fb_wk3but_test) #view results 
+#p-value = 0.4923
+#Adjusted R-squared = -0.1086
+
+#Save Plot
+save_plot(filename = "figures/obwk3fb_wk3but_plot.pdf", plot = obwk3fb_wk3but_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among "obese" participants was 0.4923, which is not statistically significant. Furthermore, the R value was an insignificant value close to zero (-0.1086). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average butyrate concentration among participants whose BMI falls within the CDC's "Obese" category.
+
+###Wk3 F:B and Wk3 Propionate
+```{r}
+#PLOT
+obwk3fb_wk3pro_plot<-obese_phylum_scfa %>%
+  ggplot(aes(x = fb_ratio_wk3,
+             y = pro_wk3)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+ labs(title = "Week 3 Ratio of Firmicutes to Bacteroidetes by Propionate Concentration",
+         x = "Ratio of Firmicutes to Bacteroidetes",
+         y = "Average Propionate Concentration (mmol/kg)")
+print(obwk3fb_wk3pro_plot)
+
+#TEST
+obwk3fb_wk3pro_test <- obese_phylum_scfa %>%
+  lm(fb_ratio_wk3 ~ pro_wk3, data = .) #test relationship
+summary(obwk3fb_wk3pro_test) #view results 
+#p-value = 0.5005
+#Adjusted R-squared = -0.1162
+
+#Save Plot
+save_plot(filename = "figures/obwk3fb_wk3pro_plot.pdf", plot = obwk3fb_wk3pro_plot, nrow = 1, ncol = 1, base_aspect_ratio = 2:1)
+```
+The p-value for the linear correlation of the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among "obese" participants was 0.5005, which falls within a 95% confidence interval. However, the R value was an insignificant value close to zero (-0.1162). There does not appear to be a statistically significant linear relationship between the week 3 firmicutes to bacteroidetes ratio and the week 3 average propionate concentration among participants whose BMI falls within the CDC's "Obese" category.
+
+#Final Conclusions
+Based on the linear correlation calculations and plots above, it does not appear that any of the above tested variables have a statistically significant relationship. It is possible that we failed to detect a significant relationship, because of the many limitations of this project. For one, the only type of relationship tested were linear correlations, but it is possible that these variables are related in other ways. Additionally, our analysis used weekly average measurements for scfa concentrations (mainly due to time contraints) rather than using individual scfa measurements. Finally, there was limited BMI data which narrowed our sample sizes quite a bit (participants were especially low in the underweight and obese BMI categories).
+
+#Supplemental: Pre-Work 
+This analysis was completed prior to analyzing BMI data and was not presented in our final presentation. These tests investigate potential relationships between butyrate and propionate and were eventaully subsetted by specific supplements. We also tried subsetting for only when butyrate increased and only when propionate decreased. We hypothesized that an increase in butyrate would be correlated with a decrease in propionate. 
+#Broad
+### Tidy Data
+#### Week 1 - Week 3 Change All
+```{r}
+but_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week1 - week3) #calculate difference in butyrate 
+
+pro_wide <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, propionate_mean) %>% 
+  mutate(delta_propionate = week1 - week3) #calculate difference in propionate
+
+delta_but_pro_wide <- inner_join(x = but_wide, y = pro_wide,
+                    by = c("participant_id", 
+                           "semester", "supplement_consumed", "frequency")) %>%
+  select(-starts_with("week"), -starts_with("quantity_compliant"))
+
+
+incbut_broad_delta_wide <- delta_but_pro_wide %>% 
+  filter(delta_butyrate > 0) #subset for only increased burtyrate
+
+decpro_broad_delta_wide <- delta_but_pro_wide %>% 
+  filter(delta_propionate < 0) #subset for only increased burtyrate
+
+
+
+```
+###Analysis
+####Plot
+```{r}
+linear_correlation_plot<-delta_but_pro_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(linear_correlation_plot)
+
+
+incbut_broad_plot<-incbut_broad_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(incbut_broad_plot)
+
+decpro_broad_plot<-decpro_broad_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(decpro_broad_plot)
+
+```
+####Assumptions
+```{r}
+nrow(delta_but_pro_wide) # sample size
+
+shapiro.test(delta_but_pro_wide$delta_butyrate) #call column of df with values = vector 
+shapiro.test(delta_but_pro_wide$delta_propionate) #call column of df with values = vector 
+
+ggplot(delta_but_pro_wide, aes(x=delta_butyrate)) +
+  geom_histogram() #histograms show the number of data points (count) at each value
+ggplot(delta_but_pro_wide, aes(x=delta_propionate)) +
+  geom_histogram() #histograms show the number of data points (count) at each value
+
+
+```
+####Test
+```{r}
+all_data_lm <- delta_but_pro_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(all_data_lm)
+#The p-value is low at 2.8e-8 indicating significance, but the R2 value is .08 which is low meaning that the correlation is very affected by variation, so we cannot accept the correlation.
+```
+
+```{r}
+incbut_broad_test <- incbut_broad_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(incbut_broad_test) #view results 
+#p-value = 0.01729
+#Adjusted R-squared = 0.02205
+
+decpro_broad_test <- decpro_broad_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(decpro_broad_test) #view results 
+#p-value = 0.05918
+#Adjusted R-squared = 0.01359
+
+```
+
+#By Supplement
+##BRMPS
+###Tidy Data
+```{r}
+BRMPS_delta_wide <- delta_but_pro_wide %>% 
+  filter(supplement_consumed == "BRMPS", frequency == "1xdaily") #subset for BRMPS 1x
+
+inc_BRMPS_delta_wide <- delta_but_pro_wide %>% 
+  filter(supplement_consumed == "BRMPS", frequency == "1xdaily", delta_butyrate > 0) #subset for only increased burtyrate BRMPS 1x
+
+dec_BRMPS_delta_wide <- delta_but_pro_wide %>% 
+  filter(supplement_consumed == "BRMPS", frequency == "1xdaily", delta_propionate < 0) #subset for only decreased propionate BRMPS 1x
+```
+###Analysis
+####Assumptions
+```{r}
+# check sample size
+BRMPS_delta_wide %>%
+  summarise(sample_size = n()) #use summarise() and n() to get counts of ppl
+#n=66
+
+inc_BRMPS_delta_wide %>%
+  summarise(sample_size = n()) #use summarise() and n() to get counts of ppl
+#n=39
+
+dec_BRMPS_delta_wide %>%
+  summarise(sample_size = n()) #use summarise() and n() to get counts of ppl
+#n=38
+
+# normality
+shapiro.test(BRMPS_delta_wide$delta_butyrate) #p-value = 0.5985
+shapiro.test(BRMPS_delta_wide$delta_propionate) #p-value = 0.8763
+
+shapiro.test(inc_BRMPS_delta_wide$delta_butyrate) #p-value = 0.00022222
+shapiro.test(inc_BRMPS_delta_wide$delta_propionate) #p-value = 0.8143
+
+shapiro.test(dec_BRMPS_delta_wide$delta_butyrate) #p-value = 0.7484
+shapiro.test(dec_BRMPS_delta_wide$delta_propionate) #p-value = 0.002383
+
+# histogram
+ggplot(BRMPS_delta_wide, aes(x=delta_butyrate)) +
+  geom_histogram() #histogram for delta butyrate = very normal
+
+ggplot(BRMPS_delta_wide, aes(x=delta_propionate)) +
+  geom_histogram() #histogram for delta propionate = roughly normal
+
+ggplot(inc_BRMPS_delta_wide, aes(x=delta_butyrate)) +
+  geom_histogram() #histogram for delta butyrate = very skewed right
+
+ggplot(inc_BRMPS_delta_wide, aes(x=delta_propionate)) +
+  geom_histogram() #histogram for delta propionate = roughly normal
+
+ggplot(dec_BRMPS_delta_wide, aes(x=delta_butyrate)) +
+  geom_histogram() #histogram for delta butyrate = roughly normal
+
+ggplot(dec_BRMPS_delta_wide, aes(x=delta_propionate)) +
+  geom_histogram() #histogram for delta propionate = skewed left
+
+# variances
+var.test(x = BRMPS_delta_wide$delta_butyrate, 
+         y = BRMPS_delta_wide$delta_propionate, 
+         alternative = "two.sided") # p-value = 0.1289
+
+var.test(x = inc_BRMPS_delta_wide$delta_butyrate, 
+         y = inc_BRMPS_delta_wide$delta_propionate, 
+         alternative = "two.sided") # p-value = 0.1072
+
+var.test(x = dec_BRMPS_delta_wide$delta_butyrate, 
+         y = dec_BRMPS_delta_wide$delta_propionate, 
+         alternative = "two.sided") # p-value = 2.42e-05 UNEQUAL VARIANCES
+```
+####Plot
+```{r}
+BRMPS_plot<-BRMPS_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(BRMPS_plot)
+
+inc_BRMPS_plot<-inc_BRMPS_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(inc_BRMPS_plot)
+
+dec_BRMPS_plot<-dec_BRMPS_delta_wide %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(dec_BRMPS_plot)
+```
+####Test
+```{r}
+BRMPS_test <- BRMPS_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(BRMPS_test) #view results 
+#p-value = 0.01359
+#Adjusted R-squared = 0.07967
+
+inc_BRMPS_test <- inc_BRMPS_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(inc_BRMPS_test) #view results 
+#p-value = 0.9439
+#Adjusted R-squared = -0.02689
+
+dec_BRMPS_test <- dec_BRMPS_delta_wide %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(dec_BRMPS_test) #view results 
+#p-value = 0.1572
+#Adjusted R-squared = 0.02853
+```
+
+
+##LOODAT
+###Tidy Data
+```{r}
+but_wide_LOODAT <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily", supplement_consumed == "LOODAT") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
+but_wide_LOODAT
+
+pro_wide_LOODAT <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily", supplement_consumed == "LOODAT") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, propionate_mean) %>% 
+  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
+pro_wide_LOODAT
+
+delta_but_pro_wide_LOODAT <- inner_join(x = but_wide_LOODAT, y = pro_wide_LOODAT,
+                    by = c("participant_id", 
+                           "semester", "supplement_consumed")) %>%
+  select(-starts_with("week"))
+delta_but_pro_wide_LOODAT
+```
+###Analysis
+####Assumptions
+```{r}
+#Sample Size
+delta_but_pro_wide_LOODAT %>%
+  summarise(sample_size = n()) #n=16
+
+#Normality
+#Butyrate:
+shapiro.test(delta_but_pro_wide_LOODAT$delta_butyrate)
+hist(delta_but_pro_wide_LOODAT$delta_butyrate)
+qqnorm(delta_but_pro_wide_LOODAT$delta_butyrate)
+qqline(delta_but_pro_wide_LOODAT$delta_butyrate) #p=0.8874. Normality supported.
+#Propionate:
+shapiro.test(delta_but_pro_wide_LOODAT$delta_propionate)
+hist(delta_but_pro_wide_LOODAT$delta_propionate)
+qqnorm(delta_but_pro_wide_LOODAT$delta_propionate)
+qqline(delta_but_pro_wide_LOODAT$delta_propionate) #p=0.8912. Normality supported
+
+#Equality of Variances 
+var.test(delta_but_pro_wide_LOODAT$delta_butyrate, delta_but_pro_wide_LOODAT$delta_propionate, alternative = c("two.sided"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT$delta_butyrate, delta_but_pro_wide_LOODAT$delta_propionate, alternative = c("greater"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT$delta_butyrate, delta_but_pro_wide_LOODAT$delta_propionate, alternative = c("less"), conf.level = 0.90) #Variances not equal. Variance ratio b/t two groups less than 1. Equal variances not supported. Variance ratio 0.490782.
+
+#------------------------------------------------------------------------------------
+#Assumptions selecting for butyrate increase: 
+delta_but_pro_wide_LOODAT_dbup <- delta_but_pro_wide_LOODAT %>%
+  filter(delta_butyrate > 0) %>%
+  summarise(sample_size = n()) #n=10
+delta_but_pro_wide_LOODAT_dbup
+
+delta_but_pro_wide_LOODAT_dbup <- delta_but_pro_wide_LOODAT %>%
+  filter(delta_butyrate > 0)
+
+#Normality
+#Butyrate:
+shapiro.test(delta_but_pro_wide_LOODAT_dbup$delta_butyrate)
+hist(delta_but_pro_wide_LOODAT_dbup$delta_butyrate)
+qqnorm(delta_but_pro_wide_LOODAT_dbup$delta_butyrate)
+qqline(delta_but_pro_wide_LOODAT_dbup$delta_butyrate) #p=0.4914. Normality supported.
+
+#Propionate:
+shapiro.test(delta_but_pro_wide_LOODAT_dbup$delta_propionate)
+hist(delta_but_pro_wide_LOODAT_dbup$delta_propionate)
+qqnorm(delta_but_pro_wide_LOODAT_dbup$delta_propionate)
+qqline(delta_but_pro_wide_LOODAT_dbup$delta_propionate) #p=0.729. Normality supported
+
+#Equality of Variances 
+var.test(delta_but_pro_wide_LOODAT_dbup$delta_butyrate, delta_but_pro_wide_LOODAT_dbup$delta_propionate, alternative = c("two.sided"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT_dbup$delta_butyrate, delta_but_pro_wide_LOODAT_dbup$delta_propionate, alternative = c("greater"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT_dbup$delta_butyrate, delta_but_pro_wide_LOODAT_dbup$delta_propionate, alternative = c("less"), conf.level = 0.90) #Variances not equal. Variance ratio b/t two groups less than 1. Equal variances not supported. Variance ratio 0.1342535
+
+#------------------------------------------------------------------------------------
+#Assumptions selecting for propionate Conditions: 
+delta_but_pro_wide_LOODAT_pdown <- delta_but_pro_wide_LOODAT %>%
+  filter(delta_propionate < 0) %>%
+  summarise(sample_size = n()) #n=9
+delta_but_pro_wide_LOODAT_pdown
+
+delta_but_pro_wide_LOODAT_pdown <- delta_but_pro_wide_LOODAT %>%
+  filter(delta_propionate < 0)
+
+#Normality
+#Butyrate:
+shapiro.test(delta_but_pro_wide_LOODAT_pdown$delta_butyrate)
+hist(delta_but_pro_wide_LOODAT_pdown$delta_butyrate)
+qqnorm(delta_but_pro_wide_LOODAT_pdown$delta_butyrate)
+qqline(delta_but_pro_wide_LOODAT_pdown$delta_butyrate) #p=0.8178. Normality supported.
+
+#Propionate:
+shapiro.test(delta_but_pro_wide_LOODAT_pdown$delta_propionate)
+hist(delta_but_pro_wide_LOODAT_pdown$delta_propionate)
+qqnorm(delta_but_pro_wide_LOODAT_pdown$delta_propionate)
+qqline(delta_but_pro_wide_LOODAT_pdown$delta_propionate) #p=0.2762. Normality supported
+
+#Equality of Variances 
+var.test(delta_but_pro_wide_LOODAT_pdown$delta_butyrate, delta_but_pro_wide_LOODAT_pdown$delta_propionate, alternative = c("two.sided"), conf.level = 0.90) #p-value = 0.6178. 
+
+var.test(delta_but_pro_wide_LOODAT_pdown$delta_butyrate, delta_but_pro_wide_LOODAT_pdown$delta_propionate, alternative = c("greater"), conf.level = 0.90)
+
+var.test(delta_but_pro_wide_LOODAT_pdown$delta_butyrate, delta_but_pro_wide_LOODAT_pdown$delta_propionate, alternative = c("less"), conf.level = 0.90) #Variances equal. Variance ratio b/t two groups around 1. Equal variances supported. Variance ratio 1.440443. 
+```
+####Plot
+```{r}
+LOODAT_correlation_plot <- delta_but_pro_wide_LOODAT %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(LOODAT_correlation_plot)
+
+#------------------------------------------------------------------------------------
+#Plot Assuming butyrate Conditions Met:
+LOODAT_correlation_plot_dbup <- delta_but_pro_wide_LOODAT_dbup %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(LOODAT_correlation_plot_dbup)
+
+#------------------------------------------------------------------------------------
+#Plot Assuming propionate Conditions Met:
+LOODAT_correlation_plot_pdown <- delta_but_pro_wide_LOODAT_pdown %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(LOODAT_correlation_plot_pdown)
+```
+####Test
+```{r}
+LOODAT_test <- delta_but_pro_wide_LOODAT %>%
+  lm(delta_propionate ~ delta_butyrate, data = .)
+summary(LOODAT_test) #view results 
+
+#------------------------------------------------------------------------------------
+#Test Assuming Butyrate Condition Met:
+LOODAT_test_dbup <- delta_but_pro_wide_LOODAT_dbup %>%
+  lm(delta_propionate ~ delta_butyrate, data = .)
+summary(LOODAT_test_dbup) #view results 
+
+#------------------------------------------------------------------------------------
+#Test Assuming Propionate Condition Met:
+LOODAT_test_pdown <- delta_but_pro_wide_LOODAT_pdown %>%
+  lm(delta_propionate ~ delta_butyrate, data = .)
+summary(LOODAT_test_pdown) #view results 
+```
+
+##BRMPS+HiMaize
+```{r}
+
+but_wide_HMB <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, butyrate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily", supplement_consumed == "HiMaize+BRMPS") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, butyrate_mean) %>% 
+  mutate(delta_butyrate = week3 - week1) #calculate difference in butyrate 
+
+pro_wide_HMB <- all_data_wkly %>%
+  rename_all(tolower) %>% 
+  select(participant_id, semester, supplement_consumed, frequency, quantity_compliant, study_week, propionate_mean) %>% #keep only columns of interest
+  filter(study_week == "week1" | study_week == "week3", quantity_compliant == "yes", frequency == "1xdaily", supplement_consumed == "HiMaize+BRMPS") %>% #keep only weeks of interest, quantity compliant, and 1x
+  spread(study_week, propionate_mean) %>% 
+  mutate(delta_propionate = week3 - week1) #calculate difference in propionate
+
+delta_but_pro_wide_HMB <- inner_join(x = but_wide_HMB, y = pro_wide_HMB,
+                    by = c("participant_id", 
+                           "semester", "supplement_consumed","frequency", "quantity_compliant")) %>%
+  select(-starts_with("week"))
+
+```
+###Tidy Data
+###Analysis
+####Assumptions
+```{r}
+nrow(delta_but_pro_wide_HMB) # number of data points
+
+shapiro.test(delta_but_pro_wide_HMB$delta_butyrate) #call column of df with values = vector 
+shapiro.test(delta_but_pro_wide_HMB$delta_propionate) #call column of df with values = vector 
+
+ggplot(delta_but_pro_wide_HMB, aes(x=delta_butyrate)) +
+  geom_histogram() #histograms show the number of data points (count) at each value
+ggplot(delta_but_pro_wide_HMB, aes(x=delta_propionate)) +
+  geom_histogram() #histograms show the number of data points (count) at each value
+
+```
+####Plot
+```{r}
+linear_correlation_HMB_plot<-delta_but_pro_wide_HMB %>%
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(linear_correlation_HMB_plot)
+
+```
+
+```{r}
+lm_HMB_highBut_plot<-delta_but_pro_wide_HMB %>%
+  filter(delta_butyrate > "0") %>% 
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(lm_HMB_highBut_plot)
+
+```
+
+```{r}
+lm_HMB_LowPro_plot<-delta_but_pro_wide_HMB %>%
+  filter(delta_propionate < "0") %>% 
+  ggplot(aes(x = delta_butyrate,
+             y = delta_propionate)) + 
+  geom_point() + #puts data points to match x and y coordinates
+  geom_smooth(method = "lm", #used to create a linear best fit line
+              se = FALSE) + #hides confidence interval around line 
+  xlab("Delta Butyrate (mmol/kg)") + 
+  ylab("Delta Propionate (mmol/kg)") 
+print(lm_HMB_LowPro_plot)
+
+
+```
+####Test
+```{r}
+HMB_lm <- delta_but_pro_wide_HMB %>%
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(HMB_lm) #view results 
+
+# Small .022 p-value indicates significance, and the other R2 is small-ish at .2 representing that the correlation could be just from variation effects.
+```
+
+```{r}
+HMB_lm_HiBut <- delta_but_pro_wide_HMB %>%
+  filter(delta_butyrate > "0") %>% 
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(HMB_lm_HiBut) #view results 
+
+# Small .047 p-value indicates significance, and the  R2 is small-ish at .33 representing that the correlation could be just from variation effects.
+```
+
+```{r}
+HMB_lm_LoPro <- delta_but_pro_wide_HMB %>%
+  filter(delta_propionate < "0") %>% 
+  lm(delta_butyrate ~ delta_propionate, data = .) #test relationship
+summary(HMB_lm_LoPro) #view results 
+
+# Somewhat small .59 p-value indicates possible significance, and the tiny R2 of -.049 represents that it caused by by variation, so bad results.
+```
+
