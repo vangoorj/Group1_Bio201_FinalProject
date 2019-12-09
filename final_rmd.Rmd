@@ -227,6 +227,7 @@ write_delim(obese_phylum_scfa, path = "curated_data/obese_phylum_scfa.txt",
 
 #Analysis
 ##Broad (All BMIs)
+###F:B and BMI
 ```{r}
 lm_Broad_BMI_plot_wk1<-BMI_phylum_scfa %>%
   ggplot(aes(x = fb_ratio_wk1,
@@ -272,7 +273,7 @@ The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes
 
 Similarly, the week 3 F - B ratio and BMI also had an insignifcant p-value and R^2 value at p=.67 and R^2 = -.006 respectively. This also represents no significant correlation.
 
-
+###F:B and Butyrate
 ```{r}
 lm_wk1_but_Broad_plot<-BMI_phylum_scfa %>%
   ggplot(aes(x = fb_ratio_wk1,
@@ -320,6 +321,7 @@ The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes
 
 The week 3 F - B ratio and week 3 Butyrate concentration of all the participants has a insignifcant p-value and R^2 value at p=.29 and R^2 = 0.0011 respectively. This also represents no significant correlation.
 
+###F:B and Propionate
 ```{r}
 lm_wk1_pro_Broad_plot<-BMI_phylum_scfa %>%
   ggplot(aes(x = fb_ratio_wk1,
@@ -366,6 +368,7 @@ The p-value for the linear correlation of the week 1 firmicutes to bacteroidetes
 Similarly, The week 3 F - B ratio and week 3 Propionate concentration of all the participants has a signifcant p-value and insignificant R^2 value at p=.0043 and R^2 = .053 respectively. This also represents no significant correlation.
 
 ##Underweight
+###F:B and BMI
 ```{r}
 lm_under_BMI_wk1<-underweight_phylum_scfa %>%
   lm(fb_ratio_wk1 ~ BMI, data = .) #test relationship
@@ -373,7 +376,7 @@ summary(lm_under_BMI_wk1)
 #p-value = 0.6539
 #R-squared = -0.1082
 
-lm_under_BMI_plot_wk1<-BMI_phylum_scfa %>%
+lm_under_BMI_plot_wk1<-underweight_phylum_scfa %>%
   ggplot(aes(x = fb_ratio_wk1,
              y = BMI)) + 
   geom_point() + #puts data points to match x and y coordinates
@@ -387,6 +390,10 @@ save_plot(filename = "figures/lm_under_BMI_plot_wk1.pdf",
           plot = lm_under_BMI_plot_wk1,
           nrow = 1, ncol = 1, 
           base_aspect_ratio = 1.1)
+```
+
+###F:B and Butyrate
+```{r}
 
 lm_wk1_but_under_plot<-underweight_phylum_scfa %>%
   ggplot(aes(x = fb_ratio_wk1,
@@ -398,7 +405,7 @@ lm_wk1_but_under_plot<-underweight_phylum_scfa %>%
   ylab("Butyrate Concentration kg/mmol wk1")  + labs(title = "Underweight F:B Ratio and Butyrate Concentration Correlation wk1")
 print(lm_wk1_but_under_plot)
 
-lm_wk1_but_under<-BMI_phylum_scfa %>%
+lm_wk1_but_under<-underweight_phylum_scfa %>%
   lm(fb_ratio_wk1 ~ but_wk1, data = .) #test relationship
 summary(lm_wk1_but_under)
 
@@ -412,7 +419,7 @@ lm_wk3_but_under_plot<-underweight_phylum_scfa %>%
   ylab("Butyrate Concentration kg/mmol wk3")  + labs(title = "Underweight F:B Ratio and Butyrate Concentration Correlation wk3") 
 print(lm_wk3_but_under_plot)
 
-lm_wk3_but_under<-BMI_phylum_scfa %>%
+lm_wk3_but_under<-underweight_phylum_scfa %>%
   lm(fb_ratio_wk3 ~ but_wk3, data = .) #test relationship
 summary(lm_wk3_but_under)
 
@@ -445,7 +452,7 @@ lm_wk1_pro_under_plot<-underweight_phylum_scfa %>%
   ylab("Propionate Concentration kg/mmol wk1")  + labs(title = "Underweight F:B Ratio and Propionate Concentration Correlation wk1")
 print(lm_wk1_pro_under_plot)
 
-lm_wk1_pro_under<-BMI_phylum_scfa %>%
+lm_wk1_pro_under<-underweight_phylum_scfa %>%
   lm(fb_ratio_wk1 ~ pro_wk1, data = .) #test relationship
 summary(lm_wk1_pro_under)
 
@@ -459,7 +466,7 @@ lm_wk3_pro_under_plot<-underweight_phylum_scfa %>%
   ylab("Propionate Concentration kg/mmol wk3")  + labs(title = "Underweight F:B Ratio and Propionate Concentration Correlation wk3")
 print(lm_wk3_pro_under_plot)
 
-lm_wk3_pro_under<-BMI_phylum_scfa %>%
+lm_wk3_pro_under<-underweight_phylum_scfa %>%
   lm(fb_ratio_wk3 ~ pro_wk3, data = .) #test relationship
 summary(lm_wk3_pro_under)
 
